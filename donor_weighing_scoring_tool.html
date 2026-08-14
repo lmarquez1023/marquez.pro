@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Donor Weighting &amp; Scoring Tool</title>
+<style>
+  :root{
+    --indigo:#43398F;
+    --indigo-mid:#5C4FA0;
+    --indigo-deep:#2E2766;
+    --teal:#069B73;
+    --teal-deep:#057A5C;
+    --bg:#F4F5F9;
+    --card:#FFFFFF;
+    --ink:#24222E;
+    --ink-soft:#6B6879;
+    --line:#E3E2EC;
+    --amber:#B8860B;
+    --red:#C0392B;
+    --radius:14px;
+    --font-head:-apple-system,'Segoe UI',ui-sans-serif,'Helvetica Neue',Arial,sans-serif;
+    --font-body:-apple-system,'Segoe UI',ui-sans-serif,'Helvetica Neue',Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{overflow-x:hidden;max-width:100%;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);}
+  h1,h2,h3,.card h2,.section-head h3,.stat .stat-value,.flow-dot,.empty-state h3{letter-spacing:-.01em;}
+  ::selection{background:var(--teal);color:white;}
+  a{color:var(--indigo);}
+
+  /* ---------- Header ---------- */
+  header.top{
+    background:linear-gradient(115deg,var(--indigo-deep) 0%, var(--indigo) 55%, var(--teal-deep) 130%);
+    color:white;padding:36px 32px 30px;
+  }
+  header.top .eyebrow{
+    font-family:var(--font-body);font-size:12px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:#CFC9EE;margin-bottom:8px;
+  }
+  header.top h1{
+    font-family:var(--font-head);font-size:clamp(26px,3.2vw,36px);font-weight:700;
+    margin:0 0 8px;letter-spacing:-.01em;
+  }
+  header.top p{margin:0;color:#DAD6F0;max-width:640px;font-size:15px;line-height:1.55;}
+  .template-download-link{
+    display:inline-flex;align-items:center;gap:7px;margin-top:16px;font-size:13px;font-weight:600;
+    color:white;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);
+    padding:8px 14px;border-radius:9px;text-decoration:none;transition:background .15s ease;
+  }
+  .template-download-link:hover{background:rgba(255,255,255,.24);}
+
+  /* progress flow — signature element */
+  .flow{display:flex;align-items:center;gap:0;margin-top:26px;max-width:640px;}
+  .flow-step{display:flex;align-items:center;gap:10px;flex:none;}
+  .flow-dot{
+    width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-head);font-weight:700;font-size:13px;border:2px solid rgba(255,255,255,.35);
+    color:rgba(255,255,255,.65);background:rgba(255,255,255,.06);transition:all .35s ease;
+  }
+  .flow-dot.done{background:var(--teal);border-color:var(--teal);color:white;}
+  .flow-dot.active{background:white;border-color:white;color:var(--indigo-deep);}
+  .flow-label{font-size:13px;color:rgba(255,255,255,.6);font-weight:600;white-space:nowrap;}
+  .flow-label.active,.flow-label.done{color:white;}
+  .flow-line{height:2px;width:56px;background:rgba(255,255,255,.25);margin:0 10px;position:relative;overflow:hidden;flex:none;}
+  .flow-line i{position:absolute;inset:0;background:linear-gradient(90deg,var(--teal),var(--teal));width:0%;transition:width .5s ease;}
+  .flow-line.filled i{width:100%;}
+
+  /* ---------- Layout ---------- */
+  .layout{display:flex;gap:24px;padding:24px;max-width:1440px;margin:0 auto;align-items:flex-start;}
+  .panel{flex:0 0 380px;position:sticky;top:24px;display:flex;flex-direction:column;gap:16px;}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;gap:20px;}
+
+  @media (max-width: 980px){
+    .layout{flex-direction:column;}
+    .panel{position:static;flex:1 1 auto;width:100%;}
+  }
+  @media (max-width: 520px){
+    .flow{flex-wrap:nowrap;}
+    .flow-line{width:20px;margin:0 5px;}
+    .flow-label{font-size:11px;}
+    .flow-dot{width:26px;height:26px;font-size:12px;}
+    header.top{padding:28px 20px 22px;}
+  }
+
+  /* ---------- Cards ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;}
+  .card h2{
+    font-family:var(--font-head);font-size:15px;font-weight:700;margin:0 0 4px;color:var(--indigo-deep);
+    display:flex;align-items:center;gap:8px;
+  }
+  .card h2 .num{
+    width:22px;height:22px;border-radius:50%;background:var(--indigo);color:white;font-size:12px;
+    display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-body);font-weight:700;flex:none;
+  }
+  .card .sub{font-size:12.5px;color:var(--ink-soft);margin:0 0 14px;line-height:1.5;}
+
+  /* ---------- Upload ---------- */
+  .dropzone{
+    border:2px dashed #C9C6E0;border-radius:12px;padding:22px 16px;text-align:center;cursor:pointer;
+    transition:all .2s ease;background:#FBFBFD;
+  }
+  .dropzone:hover,.dropzone.drag{border-color:var(--indigo);background:#F2F0FA;}
+  .dropzone svg{margin-bottom:8px;}
+  .dropzone .dz-title{font-weight:600;font-size:13.5px;color:var(--ink);}
+  .dropzone .dz-sub{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+  input[type=file]{display:none;}
+  .template-link{
+    display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--indigo);
+    margin-top:12px;cursor:pointer;text-decoration:none;background:none;border:none;padding:0;
+  }
+  .template-link:hover{text-decoration:underline;}
+
+  .file-status{
+    margin-top:14px;padding:12px 14px;border-radius:10px;background:#F2FBF8;border:1px solid #BFE9DC;font-size:12.5px;
+  }
+  .file-status.error{background:#FDF1F0;border-color:#F1C2BC;color:var(--red);}
+  .file-status .fs-row{display:flex;justify-content:space-between;margin-top:4px;color:var(--ink-soft);}
+  .file-status .fs-row b{color:var(--ink);font-weight:600;}
+
+  .mapping{margin-top:14px;display:grid;gap:10px;}
+  .map-row{display:grid;grid-template-columns:88px 1fr;align-items:center;gap:8px;}
+  .map-row label{font-size:12px;color:var(--ink-soft);font-weight:600;}
+  select,input[type=number],input[type=text]{
+    width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:7px;font-family:var(--font-body);
+    font-size:13px;color:var(--ink);background:white;
+  }
+  select:focus,input:focus{outline:2px solid var(--indigo-mid);outline-offset:1px;}
+
+  /* ---------- Assumptions ---------- */
+  .weight-row{display:grid;grid-template-columns:1fr 74px;gap:10px;align-items:center;margin-bottom:9px;}
+  .weight-row label{font-size:13px;font-weight:600;}
+  .weight-row .hint{font-size:11px;color:var(--ink-soft);font-weight:400;display:block;}
+  .weight-total{
+    display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:8px 10px;
+    border-radius:8px;background:#F2F0FA;font-size:12.5px;font-weight:700;color:var(--indigo-deep);
+  }
+  .weight-total.bad{background:#FDF1F0;color:var(--red);}
+
+  details.subsection{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;}
+  details.subsection>summary{
+    cursor:pointer;font-size:13px;font-weight:700;color:var(--indigo-deep);list-style:none;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  details.subsection>summary::-webkit-details-marker{display:none;}
+  details.subsection>summary::after{content:"+";font-size:16px;color:var(--ink-soft);}
+  details.subsection[open]>summary::after{content:"–";}
+  .band-grid{margin-top:12px;display:grid;gap:8px;}
+  .band-row{display:grid;grid-template-columns:70px 1fr 90px;align-items:center;gap:8px;font-size:12.5px;}
+  .band-row .band-tag{
+    background:var(--indigo);color:white;border-radius:6px;padding:3px 0;text-align:center;font-weight:700;font-size:11px;
+  }
+  .band-row span.desc{color:var(--ink-soft);}
+  .tier-grid{margin-top:12px;display:grid;gap:8px;}
+  .tier-row{display:grid;grid-template-columns:56px 1fr 1fr;gap:6px;align-items:center;}
+  .tier-row .tswatch{width:10px;height:10px;border-radius:50%;}
+
+  .lookback-row{display:grid;grid-template-columns:1fr 74px;gap:10px;align-items:center;}
+
+  .btn{
+    font-family:var(--font-body);font-weight:700;font-size:13.5px;border:none;border-radius:9px;
+    padding:12px 16px;cursor:pointer;transition:transform .12s ease, box-shadow .12s ease;width:100%;
+  }
+  .btn-primary{background:linear-gradient(120deg,var(--indigo),var(--teal-deep));color:white;box-shadow:0 6px 16px -6px rgba(67,57,143,.55);}
+  .btn-primary:hover{transform:translateY(-1px);}
+  .btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+  .btn-ghost{background:none;color:var(--ink-soft);border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--indigo);color:var(--indigo);}
+  .btn-small{padding:7px 11px;font-size:12px;width:auto;}
+
+  /* ---------- Main / Results ---------- */
+  .empty-state{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    padding:70px 30px;color:var(--ink-soft);background:var(--card);border:1px dashed var(--line);border-radius:var(--radius);
+    min-height:420px;
+  }
+  .empty-state h3{font-family:var(--font-head);color:var(--indigo-deep);font-size:18px;margin:14px 0 6px;}
+  .empty-state p{max-width:340px;font-size:13.5px;line-height:1.6;margin:0;}
+
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;}
+  .stat .stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);}
+  .stat .stat-value{font-family:var(--font-head);font-size:24px;font-weight:700;color:var(--indigo-deep);margin-top:4px;}
+  .stat .stat-value.teal{color:var(--teal-deep);}
+  .stat.tier{border-left:4px solid var(--tier-color,var(--indigo));}
+
+  .section-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:0;overflow:hidden;}
+  .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .section-head h3{font-family:var(--font-head);font-size:15px;margin:0;color:var(--indigo-deep);}
+  .section-head .sub{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .section-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .search-box{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;width:170px;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{
+    position:sticky;top:0;background:#F7F7FB;text-align:left;padding:10px 14px;font-weight:700;
+    color:var(--ink-soft);font-size:11px;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;
+    border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  thead th:hover{color:var(--indigo);}
+  thead th .arrow{opacity:.4;margin-left:3px;}
+  tbody td{padding:9px 14px;border-bottom:1px solid #EEEDF5;color:var(--ink);white-space:nowrap;}
+  tbody tr:hover{background:#FAFAFD;}
+  .tier-pill{
+    display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;color:white;
+  }
+  .table-scroll{max-height:480px;overflow:auto;}
+  .table-footer{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;font-size:12px;color:var(--ink-soft);border-top:1px solid var(--line);}
+  .pager{display:flex;gap:6px;align-items:center;}
+  .pager button{background:none;border:1px solid var(--line);border-radius:6px;padding:4px 9px;font-size:12px;cursor:pointer;}
+  .pager button:disabled{opacity:.35;cursor:not-allowed;}
+
+  .as-of-input{width:70px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;}
+
+  .methodology{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:4px 20px;}
+  .methodology summary{padding:16px 0;cursor:pointer;font-family:var(--font-head);font-weight:700;color:var(--indigo-deep);font-size:14px;list-style:none;display:flex;justify-content:space-between;}
+  .methodology summary::-webkit-details-marker{display:none;}
+  .methodology summary::after{content:"Show ▾";font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--ink-soft);}
+  .methodology[open] summary::after{content:"Hide ▴";}
+  .methodology .m-body{padding:0 0 20px;font-size:13px;line-height:1.7;color:var(--ink-soft);}
+  .methodology .m-body b{color:var(--ink);}
+  .methodology .m-body code{background:#F2F0FA;color:var(--indigo-deep);padding:1px 6px;border-radius:5px;font-size:12px;}
+
+  footer.foot{text-align:center;padding:26px;font-size:11.5px;color:var(--ink-soft);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="eyebrow">From Data to Strategy</div>
+  <h1>Donor Weighting &amp; Scoring Tool</h1>
+  <p>Upload a gift-level export, adjust the assumptions on screen, and get every donor scored, tiered, and assigned an owner — no formulas, no spreadsheet.</p>
+  <a class="template-download-link" href="https://docs.google.com/spreadsheets/d/1AZ5QVvAqeemFvl4iktfsIslb9MNxCniy/edit?usp=sharing&ouid=116891832090521768292&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+    Prefer spreadsheets? Get the Excel Tool Template
+  </a>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-dot active" id="dot-1">1</div>
+      <div class="flow-label active" id="label-1">Upload</div>
+    </div>
+    <div class="flow-line" id="line-1"><i></i></div>
+    <div class="flow-step">
+      <div class="flow-dot" id="dot-2">2</div>
+      <div class="flow-label" id="label-2">Configure</div>
+    </div>
+    <div class="flow-line" id="line-2"><i></i></div>
+    <div class="flow-step">
+      <div class="flow-dot" id="dot-3">3</div>
+      <div class="flow-label" id="label-3">Results</div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ============ LEFT PANEL ============ -->
+  <div class="panel">
+
+    <!-- Upload card -->
+    <div class="card">
+      <h2><span class="num">1</span>Upload gift data</h2>
+      <p class="sub">A CSV with one row per gift. Any CRM export works — Raiser's Edge, Salesforce, Bloomerang, or a flat CSV.</p>
+
+      <div class="dropzone" id="dropzone">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#43398F" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+        <div class="dz-title">Click to upload, or drag a CSV here</div>
+        <div class="dz-sub">.csv up to ~20,000 rows</div>
+      </div>
+      <input type="file" id="fileInput" accept=".csv">
+      <button class="template-link" id="templateBtn">⬇ Download a sample CSV template</button>
+
+      <div id="fileStatus"></div>
+      <div id="mapping" class="mapping" style="display:none;"></div>
+    </div>
+
+    <!-- Assumptions card -->
+    <div class="card">
+      <h2><span class="num">2</span>Assumptions</h2>
+      <p class="sub">Same three weights that drive the scoring model. Edit anything — results recalculate when you click Calculate.</p>
+
+      <div class="weight-row">
+        <label>Recency weight<span class="hint">How recently they gave</span></label>
+        <input type="number" id="wRecency" value="30" min="0" max="100">
+      </div>
+      <div class="weight-row">
+        <label>Frequency weight<span class="hint">How often they give</span></label>
+        <input type="number" id="wFrequency" value="30" min="0" max="100">
+      </div>
+      <div class="weight-row">
+        <label>Monetary weight<span class="hint">How much they give</span></label>
+        <input type="number" id="wMonetary" value="40" min="0" max="100">
+      </div>
+      <div class="weight-total" id="weightTotal">Total: 100% ✓</div>
+
+      <div class="lookback-row" style="margin-top:14px;">
+        <label style="font-size:13px;font-weight:600;">Lookback window (years)<span class="hint" style="font-size:11px;color:var(--ink-soft);font-weight:400;display:block;">Counts Frequency &amp; Monetary within this span</span></label>
+        <input type="number" id="lookbackYears" value="3" min="1" max="20">
+      </div>
+
+      <details class="subsection">
+        <summary>Recency score bands</summary>
+        <p class="sub" style="margin-top:8px;">Days since last gift → score</p>
+        <div class="band-grid" id="recencyBands"></div>
+      </details>
+
+      <details class="subsection">
+        <summary>Frequency score bands</summary>
+        <p class="sub" style="margin-top:8px;">Min gifts in window → score</p>
+        <div class="band-grid" id="frequencyBands"></div>
+      </details>
+
+      <details class="subsection">
+        <summary>Monetary score bands</summary>
+        <p class="sub" style="margin-top:8px;">Min $ in window → score</p>
+        <div class="band-grid" id="monetaryBands"></div>
+      </details>
+
+      <details class="subsection">
+        <summary>Tier cutoffs &amp; owners</summary>
+        <p class="sub" style="margin-top:8px;">Min weighted score (0–100) → tier → owner</p>
+        <div class="tier-grid" id="tierCutoffs"></div>
+      </details>
+
+      <div style="margin-top:16px;display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-small" id="resetBtn" style="flex:1;">Reset defaults</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="calcBtn" disabled>Calculate scores</button>
+  </div>
+
+  <!-- ============ MAIN / RESULTS ============ -->
+  <div class="main" id="mainArea">
+    <div class="empty-state" id="emptyState">
+      <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#B7B4D6" stroke-width="1.4"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>
+      <h3>No results yet</h3>
+      <p>Upload a gift-level CSV on the left, check the assumptions, and click <b>Calculate scores</b> to score and tier every donor.</p>
+    </div>
+
+    <div id="resultsArea" style="display:none;">
+      <div class="stat-row" id="statRow"></div>
+
+      <div class="section-card">
+        <div class="section-head">
+          <div>
+            <h3>Donor scores</h3>
+            <div class="sub" id="donorCountLabel"></div>
+          </div>
+          <div class="section-tools">
+            <input type="text" class="search-box" id="searchBox" placeholder="Search donor…">
+            <button class="btn btn-ghost btn-small" id="downloadScoresBtn">⬇ Download CSV</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table id="scoresTable">
+            <thead><tr id="scoresHead"></tr></thead>
+            <tbody id="scoresBody"></tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <span id="pageInfo"></span>
+          <div class="pager">
+            <button id="prevPage">← Prev</button>
+            <button id="nextPage">Next →</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head">
+          <div>
+            <h3>Giving by tier — last 3 calendar years</h3>
+            <div class="sub">Sums actual gift dollars by each donor's current tier</div>
+          </div>
+          <div class="section-tools">
+            <label style="font-size:12px;color:var(--ink-soft);font-weight:600;">As-of year
+              <input type="number" class="as-of-input" id="asOfYear">
+            </label>
+            <button class="btn btn-ghost btn-small" id="downloadTierBtn">⬇ Download CSV</button>
+          </div>
+        </div>
+        <div class="table-scroll" style="max-height:none;">
+          <table id="tierTable">
+            <thead><tr></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <details class="methodology">
+      <summary>How the scoring works</summary>
+      <div class="m-body">
+        <p><b>1. Roll up per donor.</b> Every donor's raw gifts are collapsed into three numbers: most recent gift date (all-time), gift count in the lookback window, and total giving in the lookback window.</p>
+        <p><b>2. Score each factor 1–5.</b> Recency, Frequency, and Monetary are each converted to a 1–5 score using the band tables in Assumptions, so they're all on the same scale.</p>
+        <p><b>3. Blend into one weighted score.</b> <code>Weighted Score = (Recency × Recency Weight) + (Frequency × Frequency Weight) + (Monetary × Monetary Weight)</code>, scaled to 0–100.</p>
+        <p><b>4. Assign tier &amp; owner.</b> The weighted score is checked against the Tier Cutoffs table, highest cutoff first, to assign a tier and an owner.</p>
+        <p><b>Recency uses full history, not the window.</b> A donor's most recent gift date is never limited by the lookback window, so a long-lapsed donor still shows their true last gift date instead of looking like they never gave at all.</p>
+        <p><b>Nothing here is saved.</b> Everything runs in your browser — refreshing the page clears the upload. Download the CSVs if you want to keep a copy.</p>
+      </div>
+    </details>
+  </div>
+</div>
+
+<footer class="foot">Runs entirely in your browser — no data is uploaded to a server.</footer>
+
+<script>
+(function(){
+
+// ---------------------------------------------------------------
+// Default assumptions (mirrors the workbook)
+// ---------------------------------------------------------------
+const TIER_COLORS = ['#43398F','#5C4FA0','#1C7293','#069B73'];
+
+function defaultAssumptions(){
+  return {
+    weights:{ recency:30, frequency:30, monetary:40 },
+    lookbackYears:3,
+    recencyBands:[ {max:90,score:5}, {max:180,score:4}, {max:365,score:3}, {max:730,score:2} ],
+    frequencyBands:[ {min:10,score:5}, {min:6,score:4}, {min:3,score:3}, {min:1,score:2} ],
+    monetaryBands:[ {min:5000,score:5}, {min:2500,score:4}, {min:1000,score:3}, {min:250,score:2} ],
+    tierCutoffs:[
+      {min:85, tier:'Major / Leadership', owner:'Regional Director'},
+      {min:60, tier:'Core Sustainers', owner:'Portfolio Manager'},
+      {min:35, tier:'Growth Prospects', owner:'Annual Giving Team'},
+      {min:0,  tier:'Lapsed / Re-engagement', owner:'Digital / Direct Mail'}
+    ]
+  };
+}
+
+let assumptions = defaultAssumptions();
+let rawRows = [];        // {donor, date(Date), amount(Number)}
+let parsedColumns = [];  // header names from CSV
+let colMap = { donor:null, date:null, amount:null };
+let scoringResults = [];
+let currentSort = { key:'weighted', dir:'desc' };
+let currentPage = 1;
+const PAGE_SIZE = 50;
+let searchTerm = '';
+
+// ---------------------------------------------------------------
+// Step indicator
+// ---------------------------------------------------------------
+function setStep(n){
+  for(let i=1;i<=3;i++){
+    const dot = document.getElementById('dot-'+i);
+    const label = document.getElementById('label-'+i);
+    dot.classList.remove('active','done');
+    label.classList.remove('active','done');
+    if(i<n){ dot.classList.add('done'); label.classList.add('done'); dot.textContent='✓'; }
+    else if(i===n){ dot.classList.add('active'); label.classList.add('active'); dot.textContent=i; }
+    else { dot.textContent=i; }
+  }
+  document.getElementById('line-1').classList.toggle('filled', n>=2);
+  document.getElementById('line-2').classList.toggle('filled', n>=3);
+}
+setStep(1);
+
+// ---------------------------------------------------------------
+// Assumptions UI rendering
+// ---------------------------------------------------------------
+function renderBands(containerId, bands, kind){
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  bands.forEach((b,i)=>{
+    const row = document.createElement('div');
+    row.className = 'band-row';
+    const isMax = kind==='max';
+    row.innerHTML = `
+      <div class="band-tag">Score ${b.score}</div>
+      <span class="desc">${isMax ? '≤' : '≥'}</span>
+      <input type="number" data-idx="${i}" data-field="${isMax?'max':'min'}" value="${isMax?b.max:b.min}">
+    `;
+    el.appendChild(row);
+  });
+  const floorNote = document.createElement('div');
+  floorNote.style.cssText='font-size:11px;color:var(--ink-soft);margin-top:2px;';
+  floorNote.textContent = 'Anything beyond the last band scores 1.';
+  el.appendChild(floorNote);
+}
+
+function renderTierCutoffs(){
+  const el = document.getElementById('tierCutoffs');
+  el.innerHTML = '';
+  assumptions.tierCutoffs.forEach((t,i)=>{
+    const row = document.createElement('div');
+    row.className = 'tier-row';
+    row.innerHTML = `
+      <input type="number" data-idx="${i}" data-field="min" value="${t.min}" title="Min score">
+      <input type="text" data-idx="${i}" data-field="tier" value="${t.tier}" title="Tier name">
+      <input type="text" data-idx="${i}" data-field="owner" value="${t.owner}" title="Owner">
+    `;
+    el.appendChild(row);
+  });
+}
+
+function renderAssumptionsUI(){
+  document.getElementById('wRecency').value = assumptions.weights.recency;
+  document.getElementById('wFrequency').value = assumptions.weights.frequency;
+  document.getElementById('wMonetary').value = assumptions.weights.monetary;
+  document.getElementById('lookbackYears').value = assumptions.lookbackYears;
+  renderBands('recencyBands', assumptions.recencyBands, 'max');
+  renderBands('frequencyBands', assumptions.frequencyBands, 'min');
+  renderBands('monetaryBands', assumptions.monetaryBands, 'min');
+  renderTierCutoffs();
+  updateWeightTotal();
+}
+renderAssumptionsUI();
+
+function updateWeightTotal(){
+  const r = parseFloat(document.getElementById('wRecency').value)||0;
+  const f = parseFloat(document.getElementById('wFrequency').value)||0;
+  const m = parseFloat(document.getElementById('wMonetary').value)||0;
+  const total = r+f+m;
+  const el = document.getElementById('weightTotal');
+  el.textContent = `Total: ${total}% ${total===100?'✓':'— should be 100%'}`;
+  el.classList.toggle('bad', total!==100);
+}
+['wRecency','wFrequency','wMonetary'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', updateWeightTotal);
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  assumptions = defaultAssumptions();
+  renderAssumptionsUI();
+});
+
+// ---------------------------------------------------------------
+// Read assumptions back out of the UI into the assumptions object
+// ---------------------------------------------------------------
+function readAssumptionsFromUI(){
+  assumptions.weights.recency = parseFloat(document.getElementById('wRecency').value)||0;
+  assumptions.weights.frequency = parseFloat(document.getElementById('wFrequency').value)||0;
+  assumptions.weights.monetary = parseFloat(document.getElementById('wMonetary').value)||0;
+  assumptions.lookbackYears = parseFloat(document.getElementById('lookbackYears').value)||3;
+
+  document.querySelectorAll('#recencyBands input').forEach(inp=>{
+    const i = +inp.dataset.idx;
+    assumptions.recencyBands[i].max = parseFloat(inp.value)||0;
+  });
+  document.querySelectorAll('#frequencyBands input').forEach(inp=>{
+    const i = +inp.dataset.idx;
+    assumptions.frequencyBands[i].min = parseFloat(inp.value)||0;
+  });
+  document.querySelectorAll('#monetaryBands input').forEach(inp=>{
+    const i = +inp.dataset.idx;
+    assumptions.monetaryBands[i].min = parseFloat(inp.value)||0;
+  });
+  document.querySelectorAll('#tierCutoffs input').forEach(inp=>{
+    const i = +inp.dataset.idx, field = inp.dataset.field;
+    assumptions.tierCutoffs[i][field] = field==='min' ? (parseFloat(inp.value)||0) : inp.value;
+  });
+}
+
+// ---------------------------------------------------------------
+// CSV upload + parsing
+// ---------------------------------------------------------------
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+dropzone.addEventListener('click', ()=>fileInput.click());
+dropzone.addEventListener('dragover', e=>{ e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e=>{
+  e.preventDefault(); dropzone.classList.remove('drag');
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e=>{
+  if(e.target.files.length) handleFile(e.target.files[0]);
+});
+
+document.getElementById('templateBtn').addEventListener('click', ()=>{
+  const sample = 'Donor,Gift Date,Gift Amount\nJane Alvarez,2026-06-14,250\nJane Alvarez,2026-03-02,250\nMark Chen,2025-11-21,1000\nMark Chen,2024-05-03,750\nPriya Natarajan,2023-01-10,50\n';
+  downloadCSV(sample, 'sample_gift_data_template.csv');
+});
+
+function guessColumn(headers, candidates){
+  const norm = h => h.toLowerCase().replace(/[^a-z]/g,'');
+  for(const cand of candidates){
+    const idx = headers.findIndex(h=>norm(h)===cand);
+    if(idx>-1) return headers[idx];
+  }
+  for(const cand of candidates){
+    const idx = headers.findIndex(h=>norm(h).includes(cand));
+    if(idx>-1) return headers[idx];
+  }
+  return null;
+}
+
+function parseDateFlexible(v){
+  if(v instanceof Date) return v;
+  if(typeof v === 'number'){
+    const d = new Date(Math.round((v-25569)*86400*1000));
+    if(!isNaN(d)) return d;
+  }
+  const s = String(v).trim();
+  let d = new Date(s);
+  if(!isNaN(d)) return d;
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m){
+    let [_, a, b, y] = m;
+    if(y.length===2) y = '20'+y;
+    d = new Date(`${y}-${a.padStart(2,'0')}-${b.padStart(2,'0')}`);
+    if(!isNaN(d)) return d;
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------
+// Self-contained CSV parser (handles quoted fields, commas inside
+// quotes, CRLF/LF, and trims whitespace) -- no external dependency
+// ---------------------------------------------------------------
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  for(let i=0;i<text.length;i++){
+    const ch = text[i];
+    if(inQuotes){
+      if(ch === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; }
+        else inQuotes = false;
+      } else field += ch;
+    } else {
+      if(ch === '"') inQuotes = true;
+      else if(ch === ','){ row.push(field); field = ''; }
+      else if(ch === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+      else field += ch;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  const nonEmpty = rows.filter(r => r.length > 1 || (r.length===1 && r[0].trim()!==''));
+  if(nonEmpty.length === 0) return { fields: [], data: [] };
+  const fields = nonEmpty[0].map(h=>h.trim());
+  const data = nonEmpty.slice(1).map(r=>{
+    const obj = {};
+    fields.forEach((f,idx)=>{ obj[f] = (r[idx] !== undefined ? r[idx] : '').trim(); });
+    return obj;
+  });
+  return { fields, data };
+}
+
+function handleFile(file){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const { fields: headers, data } = parseCSV(e.target.result);
+      if(headers.length === 0){
+        showFileStatus(false, 'That file looks empty, or not a valid CSV.');
+        return;
+      }
+      parsedColumns = headers;
+      colMap.donor = guessColumn(headers, ['donor','donorid','constituentid','constituent','name','donorname']);
+      colMap.date = guessColumn(headers, ['giftdate','date']);
+      colMap.amount = guessColumn(headers, ['giftamount','amount','giftamt']);
+
+      window.__csvRaw = data;
+      renderMappingUI(headers);
+      applyMappingAndParse();
+      setStep(2);
+    } catch(err){
+      showFileStatus(false, 'Could not read that file: ' + err.message);
+    }
+  };
+  reader.onerror = function(){
+    showFileStatus(false, 'Could not read that file. Please try again.');
+  };
+  reader.readAsText(file);
+}
+
+function renderMappingUI(headers){
+  const el = document.getElementById('mapping');
+  el.style.display = 'grid';
+  const opts = headers.map(h=>`<option value="${h}">${h}</option>`).join('');
+  el.innerHTML = `
+    <div class="map-row"><label>Donor</label>
+      <select id="mapDonor">${opts}</select></div>
+    <div class="map-row"><label>Gift Date</label>
+      <select id="mapDate">${opts}</select></div>
+    <div class="map-row"><label>Gift Amount</label>
+      <select id="mapAmount">${opts}</select></div>
+  `;
+  if(colMap.donor) document.getElementById('mapDonor').value = colMap.donor;
+  if(colMap.date) document.getElementById('mapDate').value = colMap.date;
+  if(colMap.amount) document.getElementById('mapAmount').value = colMap.amount;
+
+  ['mapDonor','mapDate','mapAmount'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', ()=>{
+      colMap.donor = document.getElementById('mapDonor').value;
+      colMap.date = document.getElementById('mapDate').value;
+      colMap.amount = document.getElementById('mapAmount').value;
+      applyMappingAndParse();
+    });
+  });
+}
+
+function showFileStatus(ok, html){
+  const el = document.getElementById('fileStatus');
+  el.className = 'file-status' + (ok?'':' error');
+  el.innerHTML = html;
+}
+
+function applyMappingAndParse(){
+  if(!colMap.donor || !colMap.date || !colMap.amount){
+    showFileStatus(false, 'Pick which column is Donor, Gift Date, and Gift Amount above.');
+    document.getElementById('calcBtn').disabled = true;
+    return;
+  }
+  const data = window.__csvRaw || [];
+  const rows = [];
+  let skipped = 0;
+  for(const r of data){
+    const donor = (r[colMap.donor]||'').toString().trim();
+    const dateVal = parseDateFlexible(r[colMap.date]);
+    const amtRaw = (r[colMap.amount]||'').toString().replace(/[$,]/g,'').trim();
+    const amt = parseFloat(amtRaw);
+    if(!donor || !dateVal || isNaN(amt)){ skipped++; continue; }
+    rows.push({donor, date:dateVal, amount:amt});
+  }
+  rawRows = rows;
+
+  if(rows.length===0){
+    showFileStatus(false, 'No usable rows found. Check the column mapping above.');
+    document.getElementById('calcBtn').disabled = true;
+    return;
+  }
+
+  const donorCount = new Set(rows.map(r=>r.donor)).size;
+  const dates = rows.map(r=>r.date.getTime());
+  const minD = new Date(Math.min(...dates)), maxD = new Date(Math.max(...dates));
+  const fmt = d => d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+
+  showFileStatus(true, `
+    <div class="fs-row"><span>Gift rows parsed</span><b>${rows.length.toLocaleString()}</b></div>
+    <div class="fs-row"><span>Unique donors</span><b>${donorCount.toLocaleString()}</b></div>
+    <div class="fs-row"><span>Date range</span><b>${fmt(minD)} – ${fmt(maxD)}</b></div>
+    ${skipped ? `<div class="fs-row"><span>Rows skipped</span><b style="color:var(--red)">${skipped}</b></div>` : ''}
+  `);
+  document.getElementById('calcBtn').disabled = false;
+}
+
+function downloadCSV(content, filename){
+  const blob = new Blob([content], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ---------------------------------------------------------------
+// Scoring engine
+// ---------------------------------------------------------------
+function scoreFromMaxBands(value, bands){
+  for(const b of bands){ if(value <= b.max) return b.score; }
+  return 1;
+}
+function scoreFromMinBands(value, bands){
+  for(const b of bands){ if(value >= b.min) return b.score; }
+  return 1;
+}
+function assignTier(weighted, cutoffs){
+  const sorted = [...cutoffs].sort((a,b)=>b.min-a.min);
+  for(const c of sorted){ if(weighted >= c.min) return {tier:c.tier, owner:c.owner}; }
+  return {tier:'Unassigned', owner:'—'};
+}
+
+function computeScores(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const windowStart = new Date(today);
+  windowStart.setFullYear(windowStart.getFullYear() - assumptions.lookbackYears);
+
+  const byDonor = new Map();
+  for(const r of rawRows){
+    if(!byDonor.has(r.donor)) byDonor.set(r.donor, []);
+    byDonor.get(r.donor).push(r);
+  }
+
+  const wR = assumptions.weights.recency/100;
+  const wF = assumptions.weights.frequency/100;
+  const wM = assumptions.weights.monetary/100;
+
+  const results = [];
+  for(const [donor, gifts] of byDonor){
+    const mostRecent = new Date(Math.max(...gifts.map(g=>g.date.getTime())));
+    const inWindow = gifts.filter(g=>g.date >= windowStart);
+    const giftsInWindow = inWindow.length;
+    const totalInWindow = inWindow.reduce((s,g)=>s+g.amount,0);
+    const daysSince = Math.floor((today - mostRecent)/86400000);
+
+    const recencyScore = scoreFromMaxBands(daysSince, assumptions.recencyBands);
+    const freqScore = scoreFromMinBands(giftsInWindow, assumptions.frequencyBands);
+    const monScore = scoreFromMinBands(totalInWindow, assumptions.monetaryBands);
+    const weighted = Math.round((recencyScore*wR + freqScore*wF + monScore*wM) * 20);
+    const {tier, owner} = assignTier(weighted, assumptions.tierCutoffs);
+
+    results.push({
+      donor, mostRecent, daysSince, giftsInWindow, totalInWindow,
+      recencyScore, freqScore, monScore, weighted, tier, owner, allGifts: gifts
+    });
+  }
+  return results;
+}
+
+// ---------------------------------------------------------------
+// Calculate button
+// ---------------------------------------------------------------
+document.getElementById('calcBtn').addEventListener('click', ()=>{
+  readAssumptionsFromUI();
+  const total = assumptions.weights.recency + assumptions.weights.frequency + assumptions.weights.monetary;
+  if(total !== 100){
+    if(!confirm(`Weights add up to ${total}%, not 100%. Scores will still calculate proportionally, but results may be misleading. Continue anyway?`)) return;
+  }
+  scoringResults = computeScores();
+  currentPage = 1;
+  searchTerm = '';
+  document.getElementById('searchBox').value = '';
+  renderResults();
+  setStep(3);
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('resultsArea').style.display = 'block';
+});
+
+// file uploaded -> step 2
+fileInput.addEventListener('change', ()=>{ if(rawRows.length) setStep(2); });
+dropzone.addEventListener('drop', ()=>{ setTimeout(()=>{ if(rawRows.length) setStep(2); }, 300); });
+
+// ---------------------------------------------------------------
+// Results rendering
+// ---------------------------------------------------------------
+function tierColor(tierName){
+  const idx = assumptions.tierCutoffs.findIndex(t=>t.tier===tierName);
+  return idx>-1 ? TIER_COLORS[idx % TIER_COLORS.length] : '#999';
+}
+
+function renderStats(){
+  const el = document.getElementById('statRow');
+  const totalDonors = scoringResults.length;
+  const totalGiving = scoringResults.reduce((s,r)=>s+r.totalInWindow,0);
+  const tierCounts = {};
+  assumptions.tierCutoffs.forEach(t=>tierCounts[t.tier]=0);
+  scoringResults.forEach(r=>{ tierCounts[r.tier] = (tierCounts[r.tier]||0)+1; });
+
+  let html = `
+    <div class="stat"><div class="stat-label">Total donors</div><div class="stat-value">${totalDonors.toLocaleString()}</div></div>
+    <div class="stat"><div class="stat-label">Total giving (in window)</div><div class="stat-value teal">$${Math.round(totalGiving).toLocaleString()}</div></div>
+  `;
+  assumptions.tierCutoffs.forEach((t,i)=>{
+    html += `<div class="stat tier" style="--tier-color:${TIER_COLORS[i%TIER_COLORS.length]}">
+      <div class="stat-label">${t.tier}</div><div class="stat-value">${(tierCounts[t.tier]||0).toLocaleString()}</div></div>`;
+  });
+  el.innerHTML = html;
+}
+
+const COLUMNS = [
+  {key:'donor', label:'Donor', type:'text'},
+  {key:'mostRecent', label:'Last Gift', type:'date'},
+  {key:'daysSince', label:'Days Since', type:'num'},
+  {key:'giftsInWindow', label:'Gifts', type:'num'},
+  {key:'totalInWindow', label:'Total $', type:'money'},
+  {key:'recencyScore', label:'Rec.', type:'num'},
+  {key:'freqScore', label:'Freq.', type:'num'},
+  {key:'monScore', label:'Mon.', type:'num'},
+  {key:'weighted', label:'Score', type:'num'},
+  {key:'tier', label:'Tier', type:'tier'},
+  {key:'owner', label:'Owner', type:'text'},
+];
+
+function renderTableHead(){
+  const head = document.getElementById('scoresHead');
+  head.innerHTML = COLUMNS.map(c=>{
+    const arrow = currentSort.key===c.key ? (currentSort.dir==='asc'?'↑':'↓') : '';
+    return `<th data-key="${c.key}">${c.label} <span class="arrow">${arrow}</span></th>`;
+  }).join('');
+  head.querySelectorAll('th').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const key = th.dataset.key;
+      if(currentSort.key===key) currentSort.dir = currentSort.dir==='asc'?'desc':'asc';
+      else { currentSort.key = key; currentSort.dir='desc'; }
+      currentPage = 1;
+      renderTableBody();
+    });
+  });
+}
+
+function getFilteredSorted(){
+  let rows = scoringResults;
+  if(searchTerm) rows = rows.filter(r=>r.donor.toLowerCase().includes(searchTerm));
+  const {key, dir} = currentSort;
+  rows = [...rows].sort((a,b)=>{
+    let av=a[key], bv=b[key];
+    if(av instanceof Date) { av=av.getTime(); bv=bv.getTime(); }
+    if(typeof av==='string') { av=av.toLowerCase(); bv=bv.toLowerCase(); }
+    if(av<bv) return dir==='asc'?-1:1;
+    if(av>bv) return dir==='asc'?1:-1;
+    return 0;
+  });
+  return rows;
+}
+
+function fmtCell(r,c){
+  const v = r[c.key];
+  if(c.type==='date') return v.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+  if(c.type==='money') return '$' + Math.round(v).toLocaleString();
+  if(c.type==='tier') return `<span class="tier-pill" style="background:${tierColor(v)}">${v}</span>`;
+  return v;
+}
+
+function renderTableBody(){
+  const rows = getFilteredSorted();
+  const totalPages = Math.max(1, Math.ceil(rows.length/PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+  const start = (currentPage-1)*PAGE_SIZE;
+  const pageRows = rows.slice(start, start+PAGE_SIZE);
+
+  document.getElementById('scoresBody').innerHTML = pageRows.map(r=>
+    `<tr>${COLUMNS.map(c=>`<td>${fmtCell(r,c)}</td>`).join('')}</tr>`
+  ).join('') || `<tr><td colspan="${COLUMNS.length}" style="text-align:center;color:var(--ink-soft);padding:24px;">No donors match.</td></tr>`;
+
+  document.getElementById('pageInfo').textContent = `Showing ${rows.length?start+1:0}–${Math.min(start+PAGE_SIZE,rows.length)} of ${rows.length.toLocaleString()} donors`;
+  document.getElementById('prevPage').disabled = currentPage<=1;
+  document.getElementById('nextPage').disabled = currentPage>=totalPages;
+  document.getElementById('donorCountLabel').textContent = `${scoringResults.length.toLocaleString()} donors scored`;
+}
+
+document.getElementById('prevPage').addEventListener('click', ()=>{ currentPage--; renderTableBody(); });
+document.getElementById('nextPage').addEventListener('click', ()=>{ currentPage++; renderTableBody(); });
+document.getElementById('searchBox').addEventListener('input', e=>{
+  searchTerm = e.target.value.toLowerCase().trim();
+  currentPage = 1;
+  renderTableBody();
+});
+
+function renderTierSummary(){
+  const asOf = parseInt(document.getElementById('asOfYear').value) || new Date().getFullYear();
+  const years = [asOf-2, asOf-1, asOf];
+
+  const totals = {};
+  assumptions.tierCutoffs.forEach(t=> totals[t.tier] = {}) ;
+  assumptions.tierCutoffs.forEach(t=> years.forEach(y=> totals[t.tier][y]=0));
+
+  scoringResults.forEach(r=>{
+    r.allGifts.forEach(g=>{
+      const y = g.date.getFullYear();
+      if(years.includes(y) && totals[r.tier]){
+        totals[r.tier][y] += g.amount;
+      }
+    });
+  });
+
+  const table = document.getElementById('tierTable');
+  const thead = table.querySelector('thead tr');
+  thead.innerHTML = `<th>Tier</th>${years.map(y=>`<th>${y}</th>`).join('')}<th>3-Yr Total</th>`;
+
+  const tbody = table.querySelector('tbody');
+  let grand = years.map(()=>0);
+  let rowsHtml = '';
+  assumptions.tierCutoffs.forEach((t,i)=>{
+    const vals = years.map(y=>totals[t.tier][y]||0);
+    vals.forEach((v,idx)=>grand[idx]+=v);
+    const rowTotal = vals.reduce((a,b)=>a+b,0);
+    rowsHtml += `<tr>
+      <td><span class="tier-pill" style="background:${TIER_COLORS[i%TIER_COLORS.length]}">${t.tier}</span></td>
+      ${vals.map(v=>`<td>$${Math.round(v).toLocaleString()}</td>`).join('')}
+      <td><b>$${Math.round(rowTotal).toLocaleString()}</b></td>
+    </tr>`;
+  });
+  const grandTotal = grand.reduce((a,b)=>a+b,0);
+  rowsHtml += `<tr style="background:#F7F7FB;font-weight:700;">
+    <td>Grand Total</td>
+    ${grand.map(v=>`<td>$${Math.round(v).toLocaleString()}</td>`).join('')}
+    <td>$${Math.round(grandTotal).toLocaleString()}</td>
+  </tr>`;
+  tbody.innerHTML = rowsHtml;
+}
+
+document.getElementById('asOfYear').addEventListener('change', renderTierSummary);
+
+function renderResults(){
+  renderStats();
+  renderTableHead();
+  renderTableBody();
+  if(!document.getElementById('asOfYear').value){
+    document.getElementById('asOfYear').value = new Date().getFullYear();
+  }
+  renderTierSummary();
+}
+
+// ---------------------------------------------------------------
+// Downloads
+// ---------------------------------------------------------------
+document.getElementById('downloadScoresBtn').addEventListener('click', ()=>{
+  const rows = getFilteredSorted();
+  const header = COLUMNS.map(c=>c.label).join(',');
+  const lines = rows.map(r=> COLUMNS.map(c=>{
+    let v = r[c.key];
+    if(c.type==='date') v = v.toISOString().slice(0,10);
+    if(typeof v === 'string' && v.includes(',')) v = `"${v}"`;
+    return v;
+  }).join(','));
+  downloadCSV([header,...lines].join('\n'), 'donor_scores.csv');
+});
+
+document.getElementById('downloadTierBtn').addEventListener('click', ()=>{
+  const table = document.getElementById('tierTable');
+  const rows = [...table.querySelectorAll('tr')].map(tr=>
+    [...tr.children].map(td=>td.textContent.replace(/\s+/g,' ').trim()).join(',')
+  );
+  downloadCSV(rows.join('\n'), 'giving_by_tier.csv');
+});
+
+})();
+</script>
+</body>
+</html>

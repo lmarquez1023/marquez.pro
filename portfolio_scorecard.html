@@ -1,0 +1,764 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  :root{
+    --navy:#0E1729;
+    --navy-2:#16213B;
+    --gold:#D6A34C;
+    --gold-hover:#E9C583;
+    --berry:#8C2F39;
+    --slate:#9AA3B8;
+    --slate-dk:#6C7690;
+    --paper:#F2EFE6;
+    --ink:#1B2333;
+    --radius:8px;
+    font-family:'Public Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  #scorecard-root{
+    background:var(--navy);
+    color:var(--slate);
+    padding:32px 32px 64px;
+    min-height:100%;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{ font-family:'Fraunces',Georgia,'Times New Roman',serif; }
+  .mono-label{ font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:1.4px; }
+  .masthead{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:1px solid var(--navy-2); padding-bottom:16px; margin-bottom:22px; gap:16px; flex-wrap:wrap;
+  }
+  .masthead h1{
+    font-size:28px; margin:0 0 6px; color:var(--paper); font-weight:600; letter-spacing:.2px;
+    font-family:'Fraunces',Georgia,serif;
+  }
+  .masthead .kicker{
+    text-transform:uppercase; letter-spacing:2px; font-size:10.5px; color:var(--gold); font-weight:600; margin-bottom:8px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .masthead .asof{ font-size:12.5px; color:var(--slate); font-family:'IBM Plex Mono',monospace; }
+  select, input[type=date], input[type=text]{
+    font-family:'Public Sans',inherit; font-size:13px; padding:8px 11px; border-radius:6px; border:1px solid var(--navy-2);
+    background:var(--navy-2); color:var(--paper);
+  }
+  select:focus, input:focus{ outline:1px solid var(--gold); }
+  button{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; letter-spacing:.4px; padding:9px 16px; border-radius:6px; border:1px solid var(--gold);
+    background:var(--gold); color:var(--navy); cursor:pointer; transition:background .15s, color .15s;
+    text-transform:uppercase;
+  }
+  button.secondary{ background:transparent; color:var(--gold); border-color:var(--gold); }
+  button.ghost{ background:transparent; color:var(--slate); border-color:var(--navy-2); font-weight:500;}
+  button:hover{ background:var(--gold-hover); border-color:var(--gold-hover); color:var(--navy); }
+  button.secondary:hover, button.ghost:hover{ background:transparent; color:var(--gold-hover); border-color:var(--gold-hover); }
+  button:disabled{ opacity:.4; cursor:not-allowed; background:var(--navy-2); border-color:var(--navy-2); color:var(--slate-dk); }
+
+  .toolbar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px;
+  }
+  .toolbar .divider{ width:1px; height:22px; background:var(--navy-2); margin:0 4px; }
+  label.small{ font-size:10.5px; color:var(--slate); display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:1.2px; font-family:'IBM Plex Mono',monospace;}
+
+  .panel{
+    background:var(--paper); border:1px solid #E4DFCF; border-radius:var(--radius); padding:20px 22px; margin-bottom:22px;
+    color:var(--ink);
+  }
+  .panel h2{ margin:0 0 14px; font-size:15px; color:var(--navy); font-family:'Fraunces',Georgia,serif; font-weight:600; }
+  .upload-grid{ display:grid; grid-template-columns:1fr 1fr auto auto; gap:14px; align-items:end; }
+  .upload-grid .field{ display:flex; flex-direction:column; }
+  .filename{ font-size:11.5px; color:var(--slate-dk); margin-top:4px; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .status-msg{ font-size:12.5px; margin-top:10px; padding:9px 11px; border-radius:6px; font-family:'IBM Plex Mono',monospace;}
+  .status-msg.ok{ background:#EAF1E4; color:#3F6B2E; }
+  .status-msg.err{ background:#F5E3E1; color:var(--berry); }
+  .status-msg.info{ background:#EAE7DC; color:var(--slate-dk); }
+
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--slate); }
+  .empty-state .glyph{ font-size:34px; margin-bottom:10px; opacity:.6; color:var(--gold); }
+
+  .slider-row{ display:flex; align-items:center; gap:14px; margin-bottom:6px; }
+  .slider-row input[type=range]{ flex:1; accent-color:var(--gold); }
+  .slider-label{ font-weight:600; color:var(--navy); font-size:14px; min-width:150px; text-align:right; font-family:'IBM Plex Mono',monospace;}
+  .period-ticks{ display:flex; justify-content:space-between; font-size:10px; color:var(--slate-dk); padding:0 2px 8px; font-family:'IBM Plex Mono',monospace;}
+
+  .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
+  .kpi{ background:var(--paper); border:1px solid #E4DFCF; border-radius:var(--radius); padding:16px 16px 14px; position:relative; overflow:hidden; color:var(--ink);}
+  .kpi::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--gold); }
+  .kpi .label{ font-size:10.5px; text-transform:uppercase; letter-spacing:1.2px; color:var(--slate-dk); margin-bottom:7px; font-family:'IBM Plex Mono',monospace;}
+  .kpi .value{ font-size:25px; font-weight:600; color:var(--navy); font-family:'Fraunces',Georgia,serif;}
+  .kpi .delta{ font-size:12px; margin-top:5px; font-weight:600; font-family:'IBM Plex Mono',monospace;}
+  .kpi .delta.up{ color:#3F6B2E; }
+  .kpi .delta.down{ color:var(--berry); }
+  .kpi .delta.flat{ color:var(--slate-dk); }
+  .kpi .sub{ font-size:11px; color:var(--slate-dk); margin-top:3px; }
+
+  .gauge-wrap{ display:flex; align-items:center; gap:16px; }
+  .gauge-bar{ flex:1; height:10px; background:#E4DFCF; border-radius:6px; overflow:hidden; }
+  .gauge-fill{ height:100%; background:linear-gradient(90deg,var(--gold),var(--berry)); border-radius:6px; }
+  .gauge-pct{ font-weight:600; color:var(--navy); font-size:15px; min-width:52px; text-align:right; font-family:'Fraunces',Georgia,serif;}
+
+  .two-col{ display:grid; grid-template-columns:1.3fr 1fr; gap:20px; align-items:start; }
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  th{ text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--slate-dk); border-bottom:1px solid #E4DFCF; padding:7px 8px; font-family:'IBM Plex Mono',monospace;}
+  td{ padding:8px 8px; border-bottom:1px solid #EDE8DA; color:var(--ink); }
+  tr:last-child td{ border-bottom:none; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .rank{ color:var(--gold); font-weight:700; width:20px; font-family:'IBM Plex Mono',monospace;}
+  .pill{ display:inline-block; font-size:10px; padding:2px 7px; border-radius:20px; font-weight:600; font-family:'IBM Plex Mono',monospace;}
+  .pill.up{ background:#EAF1E4; color:#3F6B2E; }
+  .pill.new{ background:#E7EAF4; color:#3A4A80; }
+  .pill.back{ background:#F7ECD6; color:#95661F; }
+
+  .section-title{ font-size:14px; color:var(--navy); margin:0 0 10px; display:flex; align-items:center; gap:8px; font-family:'Fraunces',Georgia,serif; font-weight:600;}
+  .section-title .n{ background:var(--navy); color:var(--paper); border-radius:20px; font-size:10px; padding:2px 9px; font-weight:600; font-family:'IBM Plex Mono',monospace;}
+
+  .trend-strip{ display:flex; align-items:flex-end; gap:3px; height:44px; margin-top:8px;}
+  .trend-bar{ flex:1; background:#E9D4A8; border-radius:2px 2px 0 0; min-height:2px; }
+  .trend-bar.active{ background:var(--gold); }
+
+  .footnote{ font-size:11px; color:var(--slate-dk); margin-top:6px; line-height:1.5;}
+  .snap-manage{ display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap;}
+  .snap-chip{ font-size:11px; background:#EAE7DC; color:var(--slate-dk); padding:5px 10px; border-radius:20px; display:flex; gap:6px; align-items:center; font-family:'IBM Plex Mono',monospace;}
+  .snap-chip button{ padding:0; background:none; border:none; color:var(--berry); font-weight:700; font-size:12px; }
+  @media print{
+    .pdf-hide{ display:none !important; }
+    *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    #scorecard-root{ background:var(--paper) !important; padding:8px; }
+    .masthead h1, .masthead .asof, .masthead .kicker{ color:var(--navy) !important; }
+    .panel{ break-inside:avoid; }
+  }
+
+  @media (max-width:900px){
+    .kpi-grid{ grid-template-columns:repeat(2,1fr); }
+    .two-col{ grid-template-columns:1fr; }
+    .upload-grid{ grid-template-columns:1fr 1fr; }
+  }
+</style>
+
+<div id="scorecard-root">
+  <div class="masthead">
+    <div>
+      <div class="kicker">Snapshot Tool</div>
+      <h1 class="serif">Portfolio Scorecard</h1>
+      <div class="asof" id="asofLine">Load a snapshot to begin.</div>
+    </div>
+    <div class="toolbar pdf-hide">
+      <div>
+        <label class="small">Portfolio</label>
+        <select id="portfolioSelect"></select>
+      </div>
+      <button class="ghost" id="newPortfolioBtn" title="Add a new portfolio">+ Portfolio</button>
+      <div id="newPortfolioForm" style="display:none; align-items:end; gap:8px;">
+        <div class="field">
+          <label class="small">New portfolio name</label>
+          <input type="text" id="newPortfolioInput" placeholder="e.g. Major Gifts" />
+        </div>
+        <button id="addPortfolioConfirm">Add</button>
+        <button class="ghost" id="addPortfolioCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmOverlay" style="display:none; position:fixed; inset:0; background:rgba(14,23,41,.6); z-index:50; align-items:center; justify-content:center;">
+    <div style="background:#F2EFE6; border-radius:10px; padding:20px 22px; max-width:360px; box-shadow:0 10px 30px rgba(0,0,0,.35);">
+      <div id="confirmMsg" style="font-size:13.5px; color:#1B2333; margin-bottom:16px; line-height:1.5; font-family:'Public Sans',sans-serif;"></div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="ghost" id="confirmCancelBtn">Cancel</button>
+        <button id="confirmOkBtn" style="background:#8C2F39; border-color:#8C2F39; color:#F2EFE6;">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel pdf-hide" id="addSnapshotPanel">
+    <h2>Add a Snapshot</h2>
+    <div class="upload-grid">
+      <div class="field">
+        <label class="small">Roster CSV (ID/Constituent ID, Last Name, First Name...)</label>
+        <input type="file" id="rosterFile" accept=".csv" />
+        <div class="filename" id="rosterFileName">No file selected</div>
+      </div>
+      <div class="field">
+        <label class="small">Gifts CSV (cumulative, all-time)</label>
+        <input type="file" id="giftsFile" accept=".csv" />
+        <div class="filename" id="giftsFileName">No file selected</div>
+      </div>
+      <div class="field">
+        <label class="small">As of Date</label>
+        <input type="date" id="asOfDate" />
+      </div>
+      <div class="field">
+        <button id="saveSnapshotBtn" disabled>Save Snapshot</button>
+      </div>
+    </div>
+    <div id="statusMsg"></div>
+    <div class="snap-manage" id="snapManage"></div>
+  </div>
+
+  <div id="dashboardArea"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+(function(){
+
+  const SCHEMA_VERSION = 3;
+
+  // ---------- utilities ----------
+  function parseAmount(s){
+    if(s==null) return 0;
+    const n = parseFloat(String(s).replace(/[^0-9.\-]/g,''));
+    return isNaN(n) ? 0 : n;
+  }
+  function parseDateStr(s){
+    if(!s) return null;
+    const parts = String(s).trim().split(/[\/\-]/);
+    if(parts.length!==3) return null;
+    let [m,d,y] = parts;
+    m=parseInt(m,10); d=parseInt(d,10); y=parseInt(y,10);
+    if(y<100) y+=2000;
+    const dt = new Date(y, m-1, d);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+  function fmtDate(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+  function fmtMoney(n){
+    if(n===null||n===undefined||!isFinite(n)) return '—';
+    if(Math.abs(n)>=1000000) return '$'+(n/1000000).toFixed(2)+'M';
+    return '$'+Math.round(n).toLocaleString('en-US');
+  }
+  function fmtMoneyFull(n){
+    if(n===null||n===undefined||!isFinite(n)) return '—';
+    return '$'+Math.round(n).toLocaleString('en-US');
+  }
+  function fmtPct(n){ if(n===null||n===undefined||!isFinite(n)) return '—'; return (n*100).toFixed(1)+'%'; }
+  function fmtNum(n){ return Math.round(n).toLocaleString('en-US'); }
+  function fiscalYear(date){ const m=date.getMonth()+1; return m>=7 ? date.getFullYear()+1 : date.getFullYear(); }
+  function fyStart(fy){ return new Date(fy-1,6,1); }
+  function addDays(date,days){ const d=new Date(date); d.setDate(d.getDate()+days); return d; }
+  function daysBetween(a,b){ return Math.round((b-a)/86400000); }
+  function median(arr){
+    if(!arr.length) return 0;
+    const s=[...arr].sort((a,b)=>a-b);
+    const mid=Math.floor(s.length/2);
+    return s.length%2 ? s[mid] : (s[mid-1]+s[mid])/2;
+  }
+  function csvParse(file){
+    return new Promise((resolve,reject)=>{
+      Papa.parse(file,{ header:true, skipEmptyLines:true,
+        complete:(res)=>resolve(res.data),
+        error:(err)=>reject(err) });
+    });
+  }
+  function slug(s){ return s.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+
+  // ---------- state ----------
+  let portfolios = [];         // [{id, name}]
+  let currentPortfolioId = null;
+  let snapshots = [];          // [{periodKey, asOf, data}] sorted asc by asOf
+  let selectedIndex = -1;
+  let pendingRosterRows = null;
+  let pendingGiftRows = null;
+
+  const $ = (id)=>document.getElementById(id);
+
+  // ---------- storage ----------
+  async function loadPortfolios(){
+    try{
+      const r = await window.storage.get('portfolios', false);
+      portfolios = r && r.value ? JSON.parse(r.value) : [];
+    }catch(e){ portfolios = []; }
+    if(portfolios.length===0){
+      portfolios = [{id:'default', name:'My Portfolio'}];
+      await savePortfolios();
+    }
+  }
+  async function savePortfolios(){
+    await window.storage.set('portfolios', JSON.stringify(portfolios), false);
+  }
+  async function loadSnapshotsFor(portfolioId){
+    let keys = [];
+    try{
+      const r = await window.storage.list('snapshot:'+portfolioId+':', false);
+      keys = r && r.keys ? r.keys : [];
+    }catch(e){ keys = []; }
+    const loaded = [];
+    for(const k of keys){
+      try{
+        const r = await window.storage.get(k, false);
+        if(r && r.value) loaded.push(JSON.parse(r.value));
+      }catch(e){}
+    }
+    loaded.sort((a,b)=> new Date(a.asOf) - new Date(b.asOf));
+    return loaded;
+  }
+  async function saveSnapshot(portfolioId, snap){
+    const key = 'snapshot:'+portfolioId+':'+snap.periodKey;
+    await window.storage.set(key, JSON.stringify(snap), false);
+  }
+  async function deleteSnapshot(portfolioId, periodKey){
+    const key = 'snapshot:'+portfolioId+':'+periodKey;
+    try{ await window.storage.delete(key, false); }catch(e){}
+  }
+
+  // ---------- computation ----------
+  function computeScorecard(rosterRows, giftRows, asOfDate){
+    const roster = new Map();
+    rosterRows.forEach(row=>{
+      const id = (row['ID']||row['Donor ID']||row['Constituent ID']||'').trim();
+      if(!id) return;
+      roster.set(id, {
+        last: (row['Last Name']||'').trim(),
+        first: (row['First Name']||'').trim()
+      });
+    });
+    const rosterSize = roster.size;
+
+    const gifts = [];
+    giftRows.forEach(row=>{
+      const dt = parseDateStr(row['Gift Date']);
+      if(!dt) return;
+      const amt = parseAmount(row['Gift Amount']);
+      const id = (row['Donor ID']||row['Constituent ID']||'').trim();
+      if(!id) return;
+      gifts.push({date:dt, amt, id, cat:(row['Fund Category']||'').trim()});
+    });
+
+    const currentFY = fiscalYear(asOfDate);
+    const priorFY = currentFY - 1;
+    const priorPriorFY = currentFY - 2;
+    const fyStartCur = fyStart(currentFY);
+    const fyStartPri = fyStart(priorFY);
+    const fyStartPriPri = fyStart(priorPriorFY);
+    const elapsedDays = daysBetween(fyStartCur, asOfDate);
+    const priorFYTDCutoff = addDays(fyStartPri, elapsedDays);
+
+    const donorStats = new Map();
+    function getStat(id){
+      if(!donorStats.has(id)) donorStats.set(id, {
+        curFYTD:0, curFYTDCount:0, priorFYTD:0, priorFYFull:0, priorPriorFYFull:0, allTime:0, minDate:null, maxDate:null
+      });
+      return donorStats.get(id);
+    }
+
+    const catTotals = { prior:{}, priorPrior:{} };
+    function addCat(bucket, cat, amt){
+      const key = cat || 'Uncategorized';
+      bucket[key] = (bucket[key]||0) + amt;
+    }
+
+    gifts.forEach(g=>{
+      const s = getStat(g.id);
+      s.allTime += g.amt;
+      if(!s.minDate || g.date < s.minDate) s.minDate = g.date;
+      if(!s.maxDate || g.date > s.maxDate) s.maxDate = g.date;
+      if(g.date >= fyStartCur && g.date <= asOfDate){ s.curFYTD += g.amt; s.curFYTDCount += 1; }
+      if(g.date >= fyStartPri && g.date <= priorFYTDCutoff){ s.priorFYTD += g.amt; }
+      if(g.date >= fyStartPri && g.date < fyStartCur){ s.priorFYFull += g.amt; addCat(catTotals.prior, g.cat, g.amt); }
+      if(g.date >= fyStartPriPri && g.date < fyStartPri){ s.priorPriorFYFull += g.amt; addCat(catTotals.priorPrior, g.cat, g.amt); }
+    });
+
+    let totalCurFYTD=0, totalPriorFYTD=0, totalPriorFYFull=0, totalPriorPriorFYFull=0, totalGiftsCurFYTD=0;
+    let activeCur=0, activePriorFull=0, retainedCount=0, retainedRevenue=0;
+    let increasedCount=0, increasedAmt=0;
+    let newDonors=0, reactivated=0;
+    let capacitySum=0, capacityActualSum=0;
+    const ltvList = [];
+    const topDonorsArr = [];
+    const increasedArr = [];
+    const reactivatedArr = [];
+
+    donorStats.forEach((s,id)=>{
+      totalCurFYTD += s.curFYTD;
+      totalPriorFYTD += s.priorFYTD;
+      totalPriorFYFull += s.priorFYFull;
+      totalPriorPriorFYFull += s.priorPriorFYFull;
+      totalGiftsCurFYTD += s.curFYTDCount;
+      if(s.curFYTD>0) activeCur++;
+      if(s.priorFYFull>0) activePriorFull++;
+      if(s.curFYTD>0 && s.priorFYFull>0){ retainedCount++; retainedRevenue += s.curFYTD; }
+      if(s.curFYTD>0 && s.priorFYTD>0 && s.curFYTD>s.priorFYTD){
+        increasedCount++; increasedAmt += (s.curFYTD - s.priorFYTD);
+        increasedArr.push({id, curFYTD:s.curFYTD, priorFYTD:s.priorFYTD, inc:s.curFYTD-s.priorFYTD});
+      }
+      if(s.curFYTD>0 && s.priorFYFull===0 && s.minDate && s.minDate < fyStartPri){
+        reactivated++; reactivatedArr.push({id, curFYTD:s.curFYTD, lastGiftBefore:s.maxDate});
+      }
+      if(s.curFYTD>0 && s.minDate && s.minDate >= fyStartCur){ newDonors++; }
+      const cap = Math.max(s.curFYTD, s.priorFYFull);
+      if(cap>0){ capacitySum += cap; capacityActualSum += s.curFYTD; }
+      if(rosterSize){ /* ltv computed below for all roster incl zero */ }
+      if(s.curFYTD>0){ topDonorsArr.push({id, curFYTD:s.curFYTD, priorFYTD:s.priorFYTD, count:s.curFYTDCount}); }
+    });
+
+    // LTV across full roster (donors with no gifts count as 0)
+    roster.forEach((info,id)=>{
+      const s = donorStats.get(id);
+      ltvList.push(s ? s.allTime : 0);
+    });
+    // include off-roster donors' LTV too? no — LTV is a roster-level metric.
+    const avgLTV = ltvList.length ? ltvList.reduce((a,b)=>a+b,0)/ltvList.length : 0;
+    const medianLTV = median(ltvList);
+
+    topDonorsArr.sort((a,b)=>b.curFYTD-a.curFYTD);
+    increasedArr.sort((a,b)=>b.inc-a.inc);
+    reactivatedArr.sort((a,b)=>b.curFYTD-a.curFYTD);
+
+    const allCats = Array.from(new Set([...Object.keys(catTotals.priorPrior), ...Object.keys(catTotals.prior)]));
+    const catBreakdown = allCats.map(cat=>({
+      category: cat,
+      priorPrior: catTotals.priorPrior[cat]||0,
+      prior: catTotals.prior[cat]||0
+    })).sort((a,b)=> (b.prior+b.priorPrior) - (a.prior+a.priorPrior));
+
+    function withName(id){
+      const r = roster.get(id);
+      return r ? (r.first+' '+r.last).trim() || ('Donor '+id) : 'Donor '+id+' (off-roster)';
+    }
+
+    return {
+      schemaVersion: SCHEMA_VERSION,
+      rosterSize,
+      currentFY, priorFY, priorPriorFY,
+      fyStartCur: fyStartCur.toISOString(), fyStartPri: fyStartPri.toISOString(),
+      elapsedDays,
+      totals:{
+        curFYTD: totalCurFYTD, priorFYTD: totalPriorFYTD, priorFYFull: totalPriorFYFull,
+        priorPriorFYFull: totalPriorPriorFYFull,
+        giftsCurFYTD: totalGiftsCurFYTD,
+        avgGift: totalGiftsCurFYTD ? totalCurFYTD/totalGiftsCurFYTD : 0,
+        yoyPct: totalPriorFYTD>0 ? (totalCurFYTD-totalPriorFYTD)/totalPriorFYTD : null
+      },
+      donors:{
+        activeCur, activePriorFull,
+        participationRate: rosterSize ? activeCur/rosterSize : 0,
+        retentionRate: activePriorFull ? retainedCount/activePriorFull : null,
+        retainedCount,
+        revenueRetention: totalPriorFYFull>0 ? retainedRevenue/totalPriorFYFull : null,
+        increasedCount, increasedAmt,
+        newDonors, reactivated
+      },
+      ltv:{ avg: avgLTV, median: medianLTV, n: ltvList.length },
+      fyCategoryBreakdown: catBreakdown,
+      capacity:{
+        capacitySum, capacityActualSum,
+        pct: capacitySum>0 ? capacityActualSum/capacitySum : null
+      },
+      topDonors: topDonorsArr.slice(0,10).map(d=>({name:withName(d.id), id:d.id, curFYTD:d.curFYTD, priorFYTD:d.priorFYTD, count:d.count})),
+      increased: increasedArr.slice(0,10).map(d=>({name:withName(d.id), id:d.id, curFYTD:d.curFYTD, priorFYTD:d.priorFYTD, inc:d.inc})),
+      returning: reactivatedArr.slice(0,10).map(d=>({name:withName(d.id), id:d.id, curFYTD:d.curFYTD}))
+    };
+  }
+
+  // ---------- UI: portfolio select ----------
+  function renderPortfolioSelect(){
+    const sel = $('portfolioSelect');
+    sel.innerHTML = '';
+    portfolios.forEach(p=>{
+      const opt = document.createElement('option');
+      opt.value = p.id; opt.textContent = p.name;
+      if(p.id===currentPortfolioId) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  async function switchPortfolio(id){
+    currentPortfolioId = id;
+    renderPortfolioSelect();
+    snapshots = await loadSnapshotsFor(id);
+    selectedIndex = snapshots.length - 1;
+    renderSnapshotChips();
+    renderDashboard();
+  }
+
+  function renderSnapshotChips(){
+    const wrap = $('snapManage');
+    wrap.innerHTML = '';
+    if(snapshots.length===0) return;
+    const label = document.createElement('span');
+    label.className = 'footnote';
+    label.style.marginRight = '4px';
+    label.textContent = 'Saved snapshots:';
+    wrap.appendChild(label);
+    snapshots.forEach((s,i)=>{
+      const chip = document.createElement('span');
+      chip.className = 'snap-chip';
+      const dt = new Date(s.asOf);
+      chip.innerHTML = '<span>'+dt.toLocaleDateString('en-US',{month:'short',year:'numeric',day:'numeric'})+'</span>';
+      const del = document.createElement('button');
+      del.textContent = '✕';
+      del.title = 'Delete this snapshot';
+      del.onclick = async ()=>{
+        const ok = await showConfirm('Delete the '+dt.toLocaleDateString()+' snapshot? This cannot be undone.');
+        if(!ok) return;
+        await deleteSnapshot(currentPortfolioId, s.periodKey);
+        snapshots = await loadSnapshotsFor(currentPortfolioId);
+        selectedIndex = snapshots.length-1;
+        renderSnapshotChips();
+        renderDashboard();
+      };
+      chip.appendChild(del);
+      wrap.appendChild(chip);
+    });
+  }
+
+  // ---------- UI: file inputs ----------
+  $('rosterFile').addEventListener('change', async (e)=>{
+    const f = e.target.files[0];
+    $('rosterFileName').textContent = f ? f.name : 'No file selected';
+    if(f){ pendingRosterRows = await csvParse(f); checkReady(); }
+  });
+  $('giftsFile').addEventListener('change', async (e)=>{
+    const f = e.target.files[0];
+    $('giftsFileName').textContent = f ? f.name : 'No file selected';
+    if(f){
+      pendingGiftRows = await csvParse(f);
+      // auto-suggest as-of date = latest gift date found
+      let maxDate = null;
+      pendingGiftRows.forEach(row=>{
+        const d = parseDateStr(row['Gift Date']);
+        if(d && (!maxDate || d>maxDate)) maxDate = d;
+      });
+      if(maxDate && !$('asOfDate').value){
+        $('asOfDate').value = maxDate.toISOString().slice(0,10);
+      }
+      checkReady();
+    }
+  });
+  $('asOfDate').addEventListener('change', checkReady);
+
+  function checkReady(){
+    $('saveSnapshotBtn').disabled = !(pendingRosterRows && pendingGiftRows && $('asOfDate').value);
+  }
+
+  $('saveSnapshotBtn').addEventListener('click', async ()=>{
+    const asOfVal = $('asOfDate').value;
+    if(!asOfVal) return;
+    const [y,m,d] = asOfVal.split('-').map(Number);
+    const asOfDate = new Date(y, m-1, d);
+    const statusEl = $('statusMsg');
+    statusEl.className = 'status-msg info';
+    statusEl.textContent = 'Computing scorecard…';
+    try{
+      const data = computeScorecard(pendingRosterRows, pendingGiftRows, asOfDate);
+      const periodKey = asOfVal;
+      const snap = { periodKey, asOf: asOfDate.toISOString(), data };
+      await saveSnapshot(currentPortfolioId, snap);
+      snapshots = await loadSnapshotsFor(currentPortfolioId);
+      selectedIndex = snapshots.findIndex(s=>s.periodKey===periodKey);
+      renderSnapshotChips();
+      renderDashboard();
+      statusEl.className = 'status-msg ok';
+      statusEl.textContent = 'Snapshot saved for '+fmtDate(asOfDate)+'. Scroll down to view.';
+      pendingRosterRows = null; pendingGiftRows = null;
+      $('rosterFile').value = ''; $('giftsFile').value = '';
+      $('rosterFileName').textContent = 'No file selected';
+      $('giftsFileName').textContent = 'No file selected';
+      $('saveSnapshotBtn').disabled = true;
+    }catch(err){
+      statusEl.className = 'status-msg err';
+      statusEl.textContent = 'Something went wrong reading those files: '+err.message;
+    }
+  });
+
+  function showConfirm(message){
+    return new Promise((resolve)=>{
+      const overlay = $('confirmOverlay');
+      $('confirmMsg').textContent = message;
+      overlay.style.display = 'flex';
+      function cleanup(result){
+        overlay.style.display = 'none';
+        okBtn.removeEventListener('click', onOk);
+        cancelBtn.removeEventListener('click', onCancel);
+        resolve(result);
+      }
+      const okBtn = $('confirmOkBtn');
+      const cancelBtn = $('confirmCancelBtn');
+      function onOk(){ cleanup(true); }
+      function onCancel(){ cleanup(false); }
+      okBtn.addEventListener('click', onOk);
+      cancelBtn.addEventListener('click', onCancel);
+    });
+  }
+
+  $('newPortfolioBtn').addEventListener('click', ()=>{
+    $('newPortfolioForm').style.display = 'flex';
+    $('newPortfolioInput').value = '';
+    $('newPortfolioInput').focus();
+  });
+  $('addPortfolioCancel').addEventListener('click', ()=>{
+    $('newPortfolioForm').style.display = 'none';
+  });
+  $('addPortfolioConfirm').addEventListener('click', async ()=>{
+    await confirmAddPortfolio();
+  });
+  $('newPortfolioInput').addEventListener('keydown', async (e)=>{
+    if(e.key==='Enter') await confirmAddPortfolio();
+    if(e.key==='Escape') $('newPortfolioForm').style.display = 'none';
+  });
+  async function confirmAddPortfolio(){
+    const name = $('newPortfolioInput').value.trim();
+    if(!name) return;
+    const id = slug(name) + '-' + Date.now().toString(36);
+    portfolios.push({id, name});
+    await savePortfolios();
+    $('newPortfolioForm').style.display = 'none';
+    await switchPortfolio(id);
+  }
+
+  $('portfolioSelect').addEventListener('change', (e)=> switchPortfolio(e.target.value));
+
+  // ---------- dashboard rendering ----------
+  function deltaSpan(pct){
+    if(pct===null||pct===undefined||!isFinite(pct)) return '<span class="delta flat">vs. same point last FY: n/a</span>';
+    const cls = pct>0.001 ? 'up' : (pct<-0.001 ? 'down' : 'flat');
+    const arrow = pct>0.001 ? '▲' : (pct<-0.001 ? '▼' : '—');
+    return '<span class="delta '+cls+'">'+arrow+' '+fmtPct(Math.abs(pct))+' vs. same point last FY</span>';
+  }
+
+  function renderDashboard(){
+    const area = $('dashboardArea');
+    const asofLine = $('asofLine');
+    if(selectedIndex<0 || snapshots.length===0){
+      asofLine.textContent = 'No snapshots yet for this portfolio — upload your roster and gifts CSVs above to create the first one.';
+      area.innerHTML = '<div class="empty-state"><div class="glyph">◈</div>No snapshots yet.<br/>Once you save one, it\'ll appear here — and you\'ll get a slider once you have two or more.</div>';
+      return;
+    }
+    const snap = snapshots[selectedIndex];
+    const d = snap.data;
+    const asOfDate = new Date(snap.asOf);
+    asofLine.textContent = 'As of '+fmtDate(asOfDate)+'  ·  FY'+String(d.currentFY).slice(-2)+' to date (day '+d.elapsedDays+' of FY)  ·  '+fmtNum(d.rosterSize)+' donors in portfolio';
+
+    let html = '';
+
+    if(!d.schemaVersion || d.schemaVersion < SCHEMA_VERSION){
+      html += '<div class="panel pdf-hide" style="border-left:4px solid var(--berry); background:#F5E3E1;">';
+      html += '<div style="font-size:12.5px; color:var(--ink);"><strong>This snapshot was saved with an earlier version of the tool</strong> — some newer fields (like Fiscal Year Totals or Donor ID) may show as "—" here. Re-upload the same two files with the same "as of" date and hit Save Snapshot to refresh it.</div>';
+      html += '</div>';
+    }
+
+    html += '<div class="pdf-hide" style="display:flex; justify-content:flex-end; margin-bottom:10px;"><button class="secondary" id="downloadPdfBtn">🖨 Print / Save as PDF</button></div>';
+
+    // slider
+    if(snapshots.length>1){
+      html += '<div class="panel">';
+      html += '<div class="slider-row"><input type="range" class="pdf-hide" id="periodSlider" min="0" max="'+(snapshots.length-1)+'" value="'+selectedIndex+'"/><span class="slider-label">'+fmtDate(asOfDate)+'</span></div>';
+      html += '<div class="period-ticks">';
+      snapshots.forEach((s,i)=>{ html += '<span>'+new Date(s.asOf).toLocaleDateString('en-US',{month:'short',year:'2-digit'})+'</span>'; });
+      html += '</div>';
+      // trend strip of total raised FYTD across snapshots
+      const maxVal = Math.max(...snapshots.map(s=>s.data.totals.curFYTD), 1);
+      html += '<div class="trend-strip">';
+      snapshots.forEach((s,i)=>{
+        const h = Math.max(2, Math.round((s.data.totals.curFYTD/maxVal)*44));
+        html += '<div class="trend-bar '+(i===selectedIndex?'active':'')+'" style="height:'+h+'px" title="'+fmtDate(new Date(s.asOf))+': '+fmtMoneyFull(s.data.totals.curFYTD)+'"></div>';
+      });
+      html += '</div>';
+      html += '<div class="footnote">Bars show Total Raised (FY-to-date) at each saved snapshot — a quick trend of pace across the year.</div>';
+      html += '</div>';
+    }
+
+    // KPI grid
+    html += '<div class="kpi-grid">';
+    html += kpiCard('Total Raised (FYTD)', fmtMoney(d.totals.curFYTD), deltaSpan(d.totals.yoyPct), 'FY'+String(d.currentFY).slice(-2)+' vs. FY'+String(d.priorFY).slice(-2)+' same point');
+    html += kpiCard('Active Donors (FYTD)', fmtNum(d.donors.activeCur), '<span class="delta flat">'+fmtPct(d.donors.participationRate)+' participation</span>', 'of '+fmtNum(d.rosterSize)+' in portfolio');
+    html += kpiCard('Avg Gift Size', fmtMoneyFull(d.totals.avgGift), '<span class="delta flat">'+fmtNum(d.totals.giftsCurFYTD)+' gifts FYTD</span>', '');
+    html += kpiCard('Donor LTV (avg)', fmtMoney(d.ltv.avg), '<span class="delta flat">median '+fmtMoney(d.ltv.median)+'</span>', 'all-time, across roster');
+    html += kpiCard('Donor Retention Rate', fmtPct(d.donors.retentionRate), '<span class="delta flat">'+fmtNum(d.donors.retainedCount)+' of '+fmtNum(d.donors.activePriorFull)+' retained</span>', 'vs. full FY'+String(d.priorFY).slice(-2));
+    html += kpiCard('Revenue Retention', fmtPct(d.donors.revenueRetention), '<span class="delta flat">of FY'+String(d.priorFY).slice(-2)+' total '+fmtMoneyFull(d.totals.priorFYFull)+'</span>', '$ from repeat donors');
+    html += kpiCard('Donors Increased YoY', fmtNum(d.donors.increasedCount), '<span class="delta up">+'+fmtMoney(d.donors.increasedAmt)+' incremental</span>', 'gave more than same point last FY');
+    html += kpiCard('Returning Donors', fmtNum(d.donors.reactivated), '<span class="delta flat">'+fmtNum(d.donors.newDonors)+' brand-new this FY</span>', 'gave again after skipping FY'+String(d.priorFY).slice(-2));
+    html += '</div>';
+
+    // fiscal year totals (two most recently completed FYs)
+    html += '<div class="panel">';
+    html += '<h2>Fiscal Year Totals</h2>';
+    if(d.priorPriorFY){
+      html += '<div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);">';
+      html += kpiCard('FY'+String(d.priorPriorFY).slice(-2)+' Total Raised', fmtMoneyFull(d.totals.priorPriorFYFull), '', 'Jul '+(d.priorPriorFY-1)+' – Jun '+d.priorPriorFY+' (complete)');
+      html += kpiCard('FY'+String(d.priorFY).slice(-2)+' Total Raised', fmtMoneyFull(d.totals.priorFYFull), '', 'Jul '+(d.priorFY-1)+' – Jun '+d.priorFY+' (complete)');
+      html += '</div>';
+      html += '<div class="footnote">These are full, closed fiscal years (not to-date) — the two most recently completed relative to this snapshot\'s as-of date. They\'ll roll forward automatically each year (e.g. next year this becomes FY'+String(d.priorFY).slice(-2)+' and FY'+String(d.currentFY).slice(-2)+').</div>';
+      if(d.fyCategoryBreakdown && d.fyCategoryBreakdown.length){
+        html += '<div style="margin-top:14px;"><table><thead><tr><th>Fund Category</th><th class="num">FY'+String(d.priorPriorFY).slice(-2)+'</th><th class="num">FY'+String(d.priorFY).slice(-2)+'</th></tr></thead><tbody>';
+        d.fyCategoryBreakdown.forEach(row=>{
+          html += '<tr><td>'+row.category+'</td><td class="num">'+fmtMoneyFull(row.priorPrior)+'</td><td class="num">'+fmtMoneyFull(row.prior)+'</td></tr>';
+        });
+        html += '</tbody></table></div>';
+      }
+    } else {
+      html += '<div class="footnote">Not available on this snapshot — re-save it to populate FY totals.</div>';
+    }
+    html += '</div>';
+
+    // capacity gauge
+    html += '<div class="panel">';
+    html += '<h2>Portfolio Capacity vs. Actual</h2>';
+    html += '<div class="gauge-wrap"><div class="gauge-bar"><div class="gauge-fill" style="width:'+Math.min(100,Math.round((d.capacity.pct||0)*100))+'%"></div></div><div class="gauge-pct">'+fmtPct(d.capacity.pct)+'</div></div>';
+    html += '<div class="footnote">Capacity benchmark = each donor\'s higher of their current-FY or prior-FY total (‘demonstrated capacity’), summed across the portfolio: '+fmtMoneyFull(d.capacity.capacitySum)+'. Actual = FY-to-date giving: '+fmtMoneyFull(d.capacity.capacityActualSum)+'. This ratio will climb toward 100% as the fiscal year progresses — read it in context of day '+d.elapsedDays+' of the fiscal year.</div>';
+    html += '</div>';
+
+    // tables
+    html += '<div class="two-col">';
+    html += tableCard('Top 10 Donors (FYTD)', d.topDonors, [
+      {h:'Donor', f:r=>r.name},
+      {h:'Donor ID', f:r=>r.id||'—'},
+      {h:'FYTD', f:r=>fmtMoneyFull(r.curFYTD), num:true},
+      {h:'Same Pt Last FY', f:r=>fmtMoneyFull(r.priorFYTD), num:true},
+      {h:'Gifts', f:r=>r.count, num:true}
+    ]);
+    html += '<div>';
+    html += tableCard('Increased Giving YoY', d.increased, [
+      {h:'Donor', f:r=>r.name},
+      {h:'FYTD', f:r=>fmtMoneyFull(r.curFYTD), num:true},
+      {h:'+ Increase', f:r=>'+'+fmtMoneyFull(r.inc), num:true, pillClass:'up'}
+    ]);
+    html += tableCard('Returning Donors', d.returning, [
+      {h:'Donor', f:r=>r.name},
+      {h:'FYTD', f:r=>fmtMoneyFull(r.curFYTD), num:true, pillClass:'back'}
+    ]);
+    html += '</div>';
+    html += '</div>';
+
+    area.innerHTML = html;
+
+    if(snapshots.length>1){
+      const slider = $('periodSlider');
+      slider.addEventListener('input', (e)=>{
+        selectedIndex = parseInt(e.target.value,10);
+        renderDashboard();
+      });
+    }
+    const pdfBtn = $('downloadPdfBtn');
+    if(pdfBtn) pdfBtn.addEventListener('click', ()=> window.print());
+  }
+
+  function kpiCard(label, value, deltaHtml, sub){
+    return '<div class="kpi"><div class="label">'+label+'</div><div class="value">'+value+'</div>'+deltaHtml+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>';
+  }
+  function tableCard(title, rows, cols){
+    let html = '<div class="panel"><div class="section-title">'+title+'<span class="n">'+rows.length+'</span></div>';
+    if(rows.length===0){
+      html += '<div class="footnote">None this period.</div></div>';
+      return html;
+    }
+    html += '<table><thead><tr><th class="rank">#</th>';
+    cols.forEach(c=> html += '<th'+(c.num?' class="num"':'')+'>'+c.h+'</th>');
+    html += '</tr></thead><tbody>';
+    rows.forEach((r,i)=>{
+      html += '<tr><td class="rank">'+(i+1)+'</td>';
+      cols.forEach(c=>{
+        const val = c.f(r);
+        html += '<td'+(c.num?' class="num"':'')+'>'+val+'</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  // ---------- init ----------
+  (async function init(){
+    await loadPortfolios();
+    renderPortfolioSelect();
+    await switchPortfolio(portfolios[0].id);
+  })();
+
+})();
+</script>
