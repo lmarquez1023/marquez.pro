@@ -1,3 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Scoresheet Tool — Luis E. Marquez</title>
+<style>
+  .mq-nav{position:sticky; top:0; z-index:9999; background:#0E1729; border-bottom:1px solid rgba(242,239,230,0.14); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  .mq-nav-wrap{max-width:1180px; margin:0 auto; padding:0 24px; height:48px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .mq-nav-brand{font-family:Georgia,'Times New Roman',serif; font-weight:600; color:#F2EFE6; text-decoration:none; font-size:0.88rem; letter-spacing:0.01em;}
+  .mq-nav-brand span{color:#D6A34C;}
+  .mq-nav-links{display:flex; gap:22px; flex-wrap:wrap;}
+  .mq-nav-links a{color:#9AA3B8; text-decoration:none; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; font-weight:600; transition:color .2s ease; white-space:nowrap;}
+  .mq-nav-links a:hover, .mq-nav-links a:focus-visible{color:#E9C583;}
+  .mq-nav-links a.mq-active{color:#D6A34C;}
+  @media (max-width:760px){ .mq-nav-links{gap:14px;} .mq-nav-links a{font-size:9.5px;} }
+</style>
+</head>
+<body>
+
+<header class="mq-nav">
+  <div class="mq-nav-wrap">
+    <a class="mq-nav-brand" href="index.html">Luis E. <span>Marquez</span></a>
+    <nav class="mq-nav-links">
+      <a href="index.html">Home</a>
+      <a href="portfolio_scorecard.html" class="mq-active">Portfolio Scoresheet</a>
+      <a href="donor_weighing_scoring_tool.html">Donor Scoring</a>
+      <a href="portfoliorevenuebenchmark.html">Revenue Benchmark</a>
+    </nav>
+  </div>
+</header>
+
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
   :root{
@@ -762,3 +794,5 @@
 
 })();
 </script>
+</body>
+</html>
