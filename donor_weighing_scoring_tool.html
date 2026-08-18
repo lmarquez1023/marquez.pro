@@ -227,31 +227,8 @@
     *{transition:none !important;}
   }
 </style>
-<style>
-  .mq-nav{position:sticky; top:0; z-index:9999; background:#0E1729; border-bottom:1px solid rgba(242,239,230,0.14); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
-  .mq-nav-wrap{max-width:1180px; margin:0 auto; padding:0 24px; height:48px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;}
-  .mq-nav-brand{font-family:Georgia,'Times New Roman',serif; font-weight:600; color:#F2EFE6; text-decoration:none; font-size:0.88rem; letter-spacing:0.01em;}
-  .mq-nav-brand span{color:#D6A34C;}
-  .mq-nav-links{display:flex; gap:22px; flex-wrap:wrap;}
-  .mq-nav-links a{color:#9AA3B8; text-decoration:none; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; font-weight:600; transition:color .2s ease; white-space:nowrap;}
-  .mq-nav-links a:hover, .mq-nav-links a:focus-visible{color:#E9C583;}
-  .mq-nav-links a.mq-active{color:#D6A34C;}
-  @media (max-width:760px){ .mq-nav-links{gap:14px;} .mq-nav-links a{font-size:9.5px;} }
-</style>
 </head>
 <body>
-
-<header class="mq-nav">
-  <div class="mq-nav-wrap">
-    <a class="mq-nav-brand" href="index.html">Luis E. <span>Marquez</span></a>
-    <nav class="mq-nav-links">
-      <a href="index.html">Home</a>
-      <a href="portfolio_scorecard.html">Portfolio Scoresheet</a>
-      <a href="donor_weighing_scoring_tool.html" class="mq-active">Donor Scoring</a>
-      <a href="portfoliorevenuebenchmark.html">Revenue Benchmark</a>
-    </nav>
-  </div>
-</header>
 
 <header class="top">
   <div class="eyebrow">From Data to Strategy</div>
@@ -461,6 +438,7 @@ let rawRows = [];        // {donor, date(Date), amount(Number)}
 let parsedColumns = [];  // header names from CSV
 let colMap = { donor:null, date:null, amount:null };
 let scoringResults = [];
+let lastTierSummary = null;
 let currentSort = { key:'weighted', dir:'desc' };
 let currentPage = 1;
 const PAGE_SIZE = 50;
@@ -999,6 +977,17 @@ function renderTierSummary(){
     <td>$${Math.round(grandTotal).toLocaleString()}</td>
   </tr>`;
   tbody.innerHTML = rowsHtml;
+
+  // Cache the raw numbers (not the formatted DOM text) so the CSV export can use real values
+  lastTierSummary = {
+    years,
+    tierRows: assumptions.tierCutoffs.map((t,i)=>({
+      tier: t.tier,
+      values: years.map(y=>totals[t.tier][y]||0),
+      total: years.reduce((s,y)=>s+(totals[t.tier][y]||0),0)
+    })),
+    grand, grandTotal
+  };
 }
 
 document.getElementById('asOfYear').addEventListener('change', renderTierSummary);
@@ -1016,24 +1005,36 @@ function renderResults(){
 // ---------------------------------------------------------------
 // Downloads
 // ---------------------------------------------------------------
+// Properly escape a value for a CSV cell: quote it (and double-up internal quotes)
+// whenever it contains a comma, quote, or newline -- commas inside dollar amounts
+// like "$225,975" are exactly why this matters.
+function csvField(v){
+  v = v === null || v === undefined ? '' : String(v);
+  if(/[",\n]/.test(v)) v = '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+
 document.getElementById('downloadScoresBtn').addEventListener('click', ()=>{
   const rows = getFilteredSorted();
-  const header = COLUMNS.map(c=>c.label).join(',');
+  const header = COLUMNS.map(c=>csvField(c.label)).join(',');
   const lines = rows.map(r=> COLUMNS.map(c=>{
     let v = r[c.key];
     if(c.type==='date') v = v.toISOString().slice(0,10);
-    if(typeof v === 'string' && v.includes(',')) v = `"${v}"`;
-    return v;
+    if(c.type==='money') v = Math.round(v);
+    return csvField(v);
   }).join(','));
   downloadCSV([header,...lines].join('\n'), 'donor_scores.csv');
 });
 
 document.getElementById('downloadTierBtn').addEventListener('click', ()=>{
-  const table = document.getElementById('tierTable');
-  const rows = [...table.querySelectorAll('tr')].map(tr=>
-    [...tr.children].map(td=>td.textContent.replace(/\s+/g,' ').trim()).join(',')
+  if(!lastTierSummary) return;
+  const { years, tierRows, grand, grandTotal } = lastTierSummary;
+  const header = ['Tier', ...years.map(y=>String(y)), '3-Yr Total'].map(csvField).join(',');
+  const lines = tierRows.map(r=>
+    [r.tier, ...r.values.map(v=>Math.round(v)), Math.round(r.total)].map(csvField).join(',')
   );
-  downloadCSV(rows.join('\n'), 'giving_by_tier.csv');
+  lines.push(['Grand Total', ...grand.map(v=>Math.round(v)), Math.round(grandTotal)].map(csvField).join(','));
+  downloadCSV([header,...lines].join('\n'), 'giving_by_tier.csv');
 });
 
 })();
