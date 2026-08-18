@@ -941,10 +941,12 @@ function renderTierSummary(){
   const years = [asOf-2, asOf-1, asOf];
 
   const totals = {};
-  assumptions.tierCutoffs.forEach(t=> totals[t.tier] = {}) ;
+  const donorCounts = {};
+  assumptions.tierCutoffs.forEach(t=> { totals[t.tier] = {}; donorCounts[t.tier] = 0; });
   assumptions.tierCutoffs.forEach(t=> years.forEach(y=> totals[t.tier][y]=0));
 
   scoringResults.forEach(r=>{
+    if(donorCounts.hasOwnProperty(r.tier)) donorCounts[r.tier]++;
     r.allGifts.forEach(g=>{
       const y = g.date.getFullYear();
       if(years.includes(y) && totals[r.tier]){
@@ -955,17 +957,20 @@ function renderTierSummary(){
 
   const table = document.getElementById('tierTable');
   const thead = table.querySelector('thead tr');
-  thead.innerHTML = `<th>Tier</th>${years.map(y=>`<th>${y}</th>`).join('')}<th>3-Yr Total</th>`;
+  thead.innerHTML = `<th>Tier</th><th># Donors</th>${years.map(y=>`<th>${y}</th>`).join('')}<th>3-Yr Total</th>`;
 
   const tbody = table.querySelector('tbody');
   let grand = years.map(()=>0);
+  let grandDonors = 0;
   let rowsHtml = '';
   assumptions.tierCutoffs.forEach((t,i)=>{
     const vals = years.map(y=>totals[t.tier][y]||0);
     vals.forEach((v,idx)=>grand[idx]+=v);
+    grandDonors += donorCounts[t.tier];
     const rowTotal = vals.reduce((a,b)=>a+b,0);
     rowsHtml += `<tr>
       <td><span class="tier-pill" style="background:${TIER_COLORS[i%TIER_COLORS.length]}">${t.tier}</span></td>
+      <td>${donorCounts[t.tier].toLocaleString()}</td>
       ${vals.map(v=>`<td>$${Math.round(v).toLocaleString()}</td>`).join('')}
       <td><b>$${Math.round(rowTotal).toLocaleString()}</b></td>
     </tr>`;
@@ -973,6 +978,7 @@ function renderTierSummary(){
   const grandTotal = grand.reduce((a,b)=>a+b,0);
   rowsHtml += `<tr style="background:#F7F7FB;font-weight:700;">
     <td>Grand Total</td>
+    <td>${grandDonors.toLocaleString()}</td>
     ${grand.map(v=>`<td>$${Math.round(v).toLocaleString()}</td>`).join('')}
     <td>$${Math.round(grandTotal).toLocaleString()}</td>
   </tr>`;
@@ -983,10 +989,11 @@ function renderTierSummary(){
     years,
     tierRows: assumptions.tierCutoffs.map((t,i)=>({
       tier: t.tier,
+      donors: donorCounts[t.tier],
       values: years.map(y=>totals[t.tier][y]||0),
       total: years.reduce((s,y)=>s+(totals[t.tier][y]||0),0)
     })),
-    grand, grandTotal
+    grand, grandTotal, grandDonors
   };
 }
 
@@ -1028,12 +1035,12 @@ document.getElementById('downloadScoresBtn').addEventListener('click', ()=>{
 
 document.getElementById('downloadTierBtn').addEventListener('click', ()=>{
   if(!lastTierSummary) return;
-  const { years, tierRows, grand, grandTotal } = lastTierSummary;
-  const header = ['Tier', ...years.map(y=>String(y)), '3-Yr Total'].map(csvField).join(',');
+  const { years, tierRows, grand, grandTotal, grandDonors } = lastTierSummary;
+  const header = ['Tier', '# Donors', ...years.map(y=>String(y)), '3-Yr Total'].map(csvField).join(',');
   const lines = tierRows.map(r=>
-    [r.tier, ...r.values.map(v=>Math.round(v)), Math.round(r.total)].map(csvField).join(',')
+    [r.tier, r.donors, ...r.values.map(v=>Math.round(v)), Math.round(r.total)].map(csvField).join(',')
   );
-  lines.push(['Grand Total', ...grand.map(v=>Math.round(v)), Math.round(grandTotal)].map(csvField).join(','));
+  lines.push(['Grand Total', grandDonors, ...grand.map(v=>Math.round(v)), Math.round(grandTotal)].map(csvField).join(','));
   downloadCSV([header,...lines].join('\n'), 'giving_by_tier.csv');
 });
 
