@@ -292,9 +292,39 @@
   const $ = (id)=>document.getElementById(id);
 
   // ---------- storage ----------
+  // This page runs as a standalone site (not inside a Claude artifact), so it
+  // persists data in the visitor's browser via localStorage rather than
+  // window.storage (which only exists in the Claude.ai artifact sandbox).
+  const LS_PREFIX = 'mq_portfolio_scorecard:';
+  const storage = {
+    async get(key){
+      let raw;
+      try{ raw = localStorage.getItem(LS_PREFIX+key); }catch(e){ raw = null; }
+      return raw===null ? null : {key, value:raw};
+    },
+    async set(key, value){
+      localStorage.setItem(LS_PREFIX+key, value);
+      return {key, value};
+    },
+    async delete(key){
+      localStorage.removeItem(LS_PREFIX+key);
+      return {key, deleted:true};
+    },
+    async list(prefix){
+      const keys = [];
+      for(let i=0;i<localStorage.length;i++){
+        const k = localStorage.key(i);
+        if(k && k.indexOf(LS_PREFIX)===0){
+          const bare = k.slice(LS_PREFIX.length);
+          if(!prefix || bare.indexOf(prefix)===0) keys.push(bare);
+        }
+      }
+      return {keys};
+    }
+  };
   async function loadPortfolios(){
     try{
-      const r = await window.storage.get('portfolios', false);
+      const r = await storage.get('portfolios');
       portfolios = r && r.value ? JSON.parse(r.value) : [];
     }catch(e){ portfolios = []; }
     if(portfolios.length===0){
@@ -303,18 +333,18 @@
     }
   }
   async function savePortfolios(){
-    await window.storage.set('portfolios', JSON.stringify(portfolios), false);
+    await storage.set('portfolios', JSON.stringify(portfolios));
   }
   async function loadSnapshotsFor(portfolioId){
     let keys = [];
     try{
-      const r = await window.storage.list('snapshot:'+portfolioId+':', false);
+      const r = await storage.list('snapshot:'+portfolioId+':');
       keys = r && r.keys ? r.keys : [];
     }catch(e){ keys = []; }
     const loaded = [];
     for(const k of keys){
       try{
-        const r = await window.storage.get(k, false);
+        const r = await storage.get(k);
         if(r && r.value) loaded.push(JSON.parse(r.value));
       }catch(e){}
     }
@@ -323,11 +353,11 @@
   }
   async function saveSnapshot(portfolioId, snap){
     const key = 'snapshot:'+portfolioId+':'+snap.periodKey;
-    await window.storage.set(key, JSON.stringify(snap), false);
+    await storage.set(key, JSON.stringify(snap));
   }
   async function deleteSnapshot(portfolioId, periodKey){
     const key = 'snapshot:'+portfolioId+':'+periodKey;
-    try{ await window.storage.delete(key, false); }catch(e){}
+    try{ await storage.delete(key); }catch(e){}
   }
 
   // ---------- computation ----------
