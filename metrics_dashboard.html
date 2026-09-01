@@ -6,7 +6,7 @@
 <title>Fundraising Metrics Dashboard | The Vault</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -15,14 +15,14 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"Public Sans",-apple-system,sans-serif;background:var(--paper);color:var(--navy);min-height:100vh;-webkit-font-smoothing:antialiased}
-h1,h2,h3{font-family:"Fraunces",serif}
+h1,h2,h3{font-family:"Public Sans",-apple-system,sans-serif;font-weight:700}
 .mono{font-family:"IBM Plex Mono",monospace}
 
 /* ---------- site nav (matches Vault tool pages) ---------- */
 .site-nav{position:sticky;top:0;z-index:50;background:var(--navy);border-bottom:1px solid rgba(214,163,76,0.25);
   display:flex;align-items:center;justify-content:space-between;padding:14px 28px;flex-wrap:wrap;gap:10px}
 .site-nav .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--paper)}
-.site-nav .brand .mark{font-family:"Fraunces",serif;font-weight:600;font-size:16px;color:var(--gold)}
+.site-nav .brand .mark{font-family:"Public Sans",sans-serif;font-weight:700;font-size:16px;color:var(--gold)}
 .site-nav .brand .sub{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--slate)}
 .site-nav .links{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
 .site-nav .links a{font-size:13px;color:var(--slate2);text-decoration:none;padding:6px 2px;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
@@ -83,14 +83,14 @@ h1,h2,h3{font-family:"Fraunces",serif}
 /* ---------- metrics ---------- */
 .hero-metric{background:linear-gradient(160deg,var(--navy) 0%,var(--navy2) 100%);color:var(--paper);border-radius:16px;padding:34px 32px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:22px}
 .hero-metric-label{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
-.hero-metric-value{font-family:"Fraunces",serif;font-size:56px;font-weight:600;line-height:1}
+.hero-metric-value{font-family:"Public Sans",sans-serif;font-size:56px;font-weight:800;line-height:1}
 .hero-metric-sub{font-size:13px;color:var(--slate2);margin-top:10px;max-width:420px;line-height:1.6}
 .benchmark-pill{display:inline-block;font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;background:rgba(214,163,76,0.15);color:var(--gold-hi);border:1px solid rgba(214,163,76,0.35);margin-top:14px}
 
 .metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
 .metric{background:#fff;border:1px solid rgba(14,23,41,0.1);border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(14,23,41,0.04)}
 .metric-label{font-size:11.5px;color:#6b7280;margin-bottom:6px;line-height:1.4}
-.metric-value{font-family:"Fraunces",serif;font-size:24px;font-weight:600;color:var(--navy)}
+.metric-value{font-family:"Public Sans",sans-serif;font-size:24px;font-weight:700;color:var(--navy)}
 .metric-info{font-size:10.5px;color:var(--slate);margin-top:5px;line-height:1.5}
 
 .info-box{background:#fff;border:1px solid rgba(14,23,41,0.1);border-left:4px solid var(--gold);border-radius:0 10px 10px 0;padding:16px 20px;margin-bottom:20px}
@@ -102,7 +102,7 @@ h1,h2,h3{font-family:"Fraunces",serif}
 .metric-card{background:#fff;border:1px solid rgba(14,23,41,0.1);border-left:4px solid var(--gold);border-radius:0 12px 12px 0;padding:20px 22px}
 .metric-card.berry{border-left-color:var(--berry)}
 .metric-card .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--berry);font-weight:600;margin-bottom:8px}
-.metric-card .value{font-family:"Fraunces",serif;font-size:32px;font-weight:600;color:var(--navy);line-height:1}
+.metric-card .value{font-family:"Public Sans",sans-serif;font-size:32px;font-weight:800;color:var(--navy);line-height:1}
 .metric-card .value.na{font-size:20px;color:var(--slate)}
 .metric-card .desc{font-size:12.5px;color:#4b5568;margin-top:8px;line-height:1.55}
 .metric-card .context{font-size:11.5px;color:var(--slate);margin-top:8px;font-style:italic}
@@ -170,7 +170,7 @@ label.field-label{font-size:12px;font-weight:600;color:#4b5568;margin-bottom:6px
     <a href="donor_weighing_scoring_tool.html">Donor Scoring</a>
     <a href="portfoliorevenuebenchmark.html">Revenue Benchmark</a>
     <a href="utm_link_builder.html">UTM Builder</a>
-    <a class="current" href="fundraising_metrics_dashboard.html">Metrics Dashboard</a>
+    <a class="current" href="metrics_dashboard.html">Metrics Dashboard</a>
   </div>
 </nav>
 
