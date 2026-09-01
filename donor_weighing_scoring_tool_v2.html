@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Donor Weighting &amp; Scoring Tool</title>
+<title>Donor Weighting &amp; Scoring Tool v2</title>
 <style>
   :root{
     --indigo:#43398F;
@@ -50,7 +50,7 @@
   }
   .template-download-link:hover{background:rgba(255,255,255,.24);}
   .version-note{
-    display:flex;align-items:center;gap:7px;margin-top:12px;font-size:12.5px;color:#DAD6F0;
+    display:flex;align-items:center;gap:7px;margin-top:16px;font-size:12.5px;color:#DAD6F0;
     background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);padding:8px 14px;border-radius:9px;max-width:fit-content;
   }
   .version-note svg{flex:none;opacity:.8;}
@@ -142,6 +142,22 @@
     border-radius:8px;background:#F2F0FA;font-size:12.5px;font-weight:700;color:var(--indigo-deep);
   }
   .weight-total.bad{background:#FDF1F0;color:var(--red);}
+
+  /* ---------- Optional module weight row ---------- */
+  .weight-row.optional{opacity:.5;transition:opacity .15s ease;}
+  .weight-row.optional.enabled{opacity:1;}
+  .weight-row.optional label{display:flex;align-items:flex-start;gap:7px;cursor:pointer;}
+  .weight-row.optional label input[type=checkbox]{margin-top:2px;flex:none;width:14px;height:14px;accent-color:var(--indigo);}
+  .weight-row.optional .hint{display:block;margin-top:1px;}
+  .module-badge{
+    display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--teal-deep);background:#EAF8F3;border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:1px;
+  }
+  .auto-balance-link{
+    background:none;border:none;padding:0;font-size:11.5px;font-weight:700;color:var(--indigo);cursor:pointer;
+    text-decoration:underline;text-underline-offset:2px;
+  }
+  .auto-balance-link:hover{color:var(--teal-deep);}
 
   details.subsection{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;}
   details.subsection>summary{
@@ -253,8 +269,8 @@
     <nav class="mq-nav-links">
       <a href="index.html">Home</a>
       <a href="portfolio_scorecard.html">Portfolio Scoresheet</a>
-      <a href="donor_weighing_scoring_tool.html" class="mq-active">Donor Scoring</a>
-      <a href="donor_weighing_scoring_tool_v2.html">Donor Scoring v2</a>
+      <a href="donor_weighing_scoring_tool.html">Donor Scoring</a>
+      <a href="donor_weighing_scoring_tool_v2.html" class="mq-active">Donor Scoring v2</a>
       <a href="portfoliorevenuebenchmark.html">Revenue Benchmark</a>
       <a href="utm_link_builder.html">UTM Builder</a>
     </nav>
@@ -262,16 +278,12 @@
 </header>
 
 <header class="top">
-  <div class="eyebrow">From Data to Strategy</div>
-  <h1>Donor Weighting &amp; Scoring Tool</h1>
-  <p>Upload a gift-level export, adjust the assumptions on screen, and get every donor scored, tiered, and assigned an owner — no formulas, no spreadsheet.</p>
-  <a class="template-download-link" href="https://docs.google.com/spreadsheets/d/1AZ5QVvAqeemFvl4iktfsIslb9MNxCniy/edit?usp=sharing&ouid=116891832090521768292&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
-    Prefer spreadsheets? Get the Excel Tool Template
-  </a>
+  <div class="eyebrow">From Data to Strategy · Version 2</div>
+  <h1>Donor Weighting &amp; Scoring Tool <span style="opacity:.55;font-weight:600;">v2</span></h1>
+  <p>Everything in the classic Recency/Frequency/Monetary model, plus an optional Event Attendance factor you can turn on if you track it. No formulas, no spreadsheet.</p>
   <div class="version-note">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>
-    Want to also weight event attendance? <a href="donor_weighing_scoring_tool_v2.html">Try version 2 →</a>
+    Prefer the simpler 3-factor model? <a href="donor_weighing_scoring_tool.html">Switch to the classic version →</a>
   </div>
 
   <div class="flow">
@@ -313,10 +325,28 @@
       <div id="mapping" class="mapping" style="display:none;"></div>
     </div>
 
+    <!-- Optional event attendance upload card -->
+    <div class="card">
+      <h2><span class="num">2</span>Event attendance <span class="module-badge">Optional</span></h2>
+      <p class="sub">A second, separate CSV — one row per donor per event attended. Skip this entirely and the tool scores on Recency, Frequency, and Monetary only.</p>
+
+      <div class="dropzone" id="eventsDropzone">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#43398F" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+        <div class="dz-title">Click to upload, or drag a CSV here</div>
+        <div class="dz-sub">Donor + event date, one row per attendance</div>
+      </div>
+      <input type="file" id="eventsFileInput" accept=".csv">
+      <button class="template-link" id="eventsTemplateBtn">⬇ Download a sample events CSV template</button>
+
+      <div id="eventsFileStatus"></div>
+      <div id="eventsMapping" class="mapping" style="display:none;"></div>
+      <button class="template-link" id="eventsClearBtn" style="display:none;color:var(--red);margin-top:10px;">✕ Remove event data</button>
+    </div>
+
     <!-- Assumptions card -->
     <div class="card">
-      <h2><span class="num">2</span>Assumptions</h2>
-      <p class="sub">Same three weights that drive the scoring model. Edit anything — results recalculate when you click Calculate.</p>
+      <h2><span class="num">3</span>Assumptions</h2>
+      <p class="sub">Same weights that drive the scoring model. Edit anything — results recalculate when you click Calculate.</p>
 
       <div class="weight-row">
         <label>Recency weight<span class="hint">How recently they gave</span></label>
@@ -330,10 +360,20 @@
         <label>Monetary weight<span class="hint">How much they give</span></label>
         <input type="number" id="wMonetary" value="40" min="0" max="100">
       </div>
+      <div class="weight-row optional" id="eventsWeightRow">
+        <label for="eventsEnabled">
+          <input type="checkbox" id="eventsEnabled" disabled>
+          <span>Event attendance weight<span class="hint">Upload event data above to enable</span></span>
+        </label>
+        <input type="number" id="wEvents" value="0" min="0" max="100" disabled>
+      </div>
       <div class="weight-total" id="weightTotal">Total: 100% ✓</div>
+      <div style="margin-top:6px;text-align:right;">
+        <button class="auto-balance-link" id="autoBalanceBtn">Auto-balance weights evenly</button>
+      </div>
 
       <div class="lookback-row" style="margin-top:14px;">
-        <label style="font-size:13px;font-weight:600;">Lookback window (years)<span class="hint" style="font-size:11px;color:var(--ink-soft);font-weight:400;display:block;">Counts Frequency &amp; Monetary within this span</span></label>
+        <label style="font-size:13px;font-weight:600;">Lookback window (years)<span class="hint" style="font-size:11px;color:var(--ink-soft);font-weight:400;display:block;">Counts Frequency, Monetary &amp; Events within this span</span></label>
         <input type="number" id="lookbackYears" value="3" min="1" max="20">
       </div>
 
@@ -353,6 +393,12 @@
         <summary>Monetary score bands</summary>
         <p class="sub" style="margin-top:8px;">Min $ in window → score</p>
         <div class="band-grid" id="monetaryBands"></div>
+      </details>
+
+      <details class="subsection" id="eventsBandsSection" style="display:none;">
+        <summary>Event attendance score bands</summary>
+        <p class="sub" style="margin-top:8px;">Min events attended in window → score</p>
+        <div class="band-grid" id="eventsBands"></div>
       </details>
 
       <details class="subsection">
@@ -431,12 +477,13 @@
     <details class="methodology">
       <summary>How the scoring works</summary>
       <div class="m-body">
-        <p><b>1. Roll up per donor.</b> Every donor's raw gifts are collapsed into three numbers: most recent gift date (all-time), gift count in the lookback window, and total giving in the lookback window.</p>
-        <p><b>2. Score each factor 1–5.</b> Recency, Frequency, and Monetary are each converted to a 1–5 score using the band tables in Assumptions, so they're all on the same scale.</p>
-        <p><b>3. Blend into one weighted score.</b> <code>Weighted Score = (Recency × Recency Weight) + (Frequency × Frequency Weight) + (Monetary × Monetary Weight)</code>, scaled to 0–100.</p>
+        <p><b>1. Roll up per donor.</b> Every donor's raw gifts are collapsed into a few numbers: most recent gift date (all-time), gift count in the lookback window, and total giving in the lookback window — plus event attendance count in the window, if you uploaded that file.</p>
+        <p><b>2. Score each factor 1–5.</b> Recency, Frequency, Monetary, and (if enabled) Events are each converted to a 1–5 score using the band tables in Assumptions, so they're all on the same scale.</p>
+        <p><b>3. Blend into one weighted score.</b> <code>Weighted Score = Σ (factor score × factor weight)</code> across whichever factors are enabled, scaled to 0–100. Disabled or unweighted factors (like Events, before you upload data) simply don't contribute.</p>
         <p><b>4. Assign tier &amp; owner.</b> The weighted score is checked against the Tier Cutoffs table, highest cutoff first, to assign a tier and an owner.</p>
         <p><b>Recency uses full history, not the window.</b> A donor's most recent gift date is never limited by the lookback window, so a long-lapsed donor still shows their true last gift date instead of looking like they never gave at all.</p>
-        <p><b>Nothing here is saved.</b> Everything runs in your browser — refreshing the page clears the upload. Download the CSVs if you want to keep a copy.</p>
+        <p><b>Event attendance is entirely optional.</b> It's a second CSV, joined to your gift data by donor name. A donor with no matching rows in that file simply scores a 0 on this factor — they aren't excluded from results. Turn it off any time by unchecking its weight above.</p>
+        <p><b>Nothing here is saved.</b> Everything runs in your browser — refreshing the page clears both uploads. Download the CSVs if you want to keep a copy.</p>
       </div>
     </details>
   </div>
@@ -454,11 +501,13 @@ const TIER_COLORS = ['#43398F','#5C4FA0','#1C7293','#069B73'];
 
 function defaultAssumptions(){
   return {
-    weights:{ recency:30, frequency:30, monetary:40 },
+    weights:{ recency:30, frequency:30, monetary:40, events:0 },
+    eventsEnabled:false,
     lookbackYears:3,
     recencyBands:[ {max:90,score:5}, {max:180,score:4}, {max:365,score:3}, {max:730,score:2} ],
     frequencyBands:[ {min:10,score:5}, {min:6,score:4}, {min:3,score:3}, {min:1,score:2} ],
     monetaryBands:[ {min:5000,score:5}, {min:2500,score:4}, {min:1000,score:3}, {min:250,score:2} ],
+    eventsBands:[ {min:5,score:5}, {min:3,score:4}, {min:2,score:3}, {min:1,score:2} ],
     tierCutoffs:[
       {min:85, tier:'Major / Leadership', owner:'Regional Director'},
       {min:60, tier:'Core Sustainers', owner:'Portfolio Manager'},
@@ -472,6 +521,10 @@ let assumptions = defaultAssumptions();
 let rawRows = [];        // {donor, date(Date), amount(Number)}
 let parsedColumns = [];  // header names from CSV
 let colMap = { donor:null, date:null, amount:null };
+let eventRows = [];      // {donor, date(Date)}
+let parsedColumnsEvents = [];
+let colMapEvents = { donor:null, date:null };
+let hasEventsData = false;
 let scoringResults = [];
 let lastTierSummary = null;
 let currentSort = { key:'weighted', dir:'desc' };
@@ -539,26 +592,69 @@ function renderAssumptionsUI(){
   document.getElementById('wRecency').value = assumptions.weights.recency;
   document.getElementById('wFrequency').value = assumptions.weights.frequency;
   document.getElementById('wMonetary').value = assumptions.weights.monetary;
+  document.getElementById('wEvents').value = assumptions.weights.events;
   document.getElementById('lookbackYears').value = assumptions.lookbackYears;
   renderBands('recencyBands', assumptions.recencyBands, 'max');
   renderBands('frequencyBands', assumptions.frequencyBands, 'min');
   renderBands('monetaryBands', assumptions.monetaryBands, 'min');
+  renderBands('eventsBands', assumptions.eventsBands, 'min');
   renderTierCutoffs();
+  setEventsModuleEnabled(hasEventsData && assumptions.eventsEnabled);
   updateWeightTotal();
 }
 renderAssumptionsUI();
+
+// ---------------------------------------------------------------
+// Events module enable/disable (the optional 4th weighting factor)
+// ---------------------------------------------------------------
+function setEventsModuleEnabled(on){
+  const checkbox = document.getElementById('eventsEnabled');
+  const weightInput = document.getElementById('wEvents');
+  const row = document.getElementById('eventsWeightRow');
+  const bandsSection = document.getElementById('eventsBandsSection');
+
+  checkbox.disabled = !hasEventsData;
+  checkbox.checked = hasEventsData && on;
+  weightInput.disabled = !(hasEventsData && on);
+  row.classList.toggle('enabled', hasEventsData && on);
+  bandsSection.style.display = (hasEventsData && on) ? '' : 'none';
+  assumptions.eventsEnabled = hasEventsData && on;
+  if(!assumptions.eventsEnabled){ assumptions.weights.events = 0; weightInput.value = 0; }
+}
 
 function updateWeightTotal(){
   const r = parseFloat(document.getElementById('wRecency').value)||0;
   const f = parseFloat(document.getElementById('wFrequency').value)||0;
   const m = parseFloat(document.getElementById('wMonetary').value)||0;
-  const total = r+f+m;
+  const e = (hasEventsData && document.getElementById('eventsEnabled').checked)
+    ? (parseFloat(document.getElementById('wEvents').value)||0) : 0;
+  const total = r+f+m+e;
   const el = document.getElementById('weightTotal');
   el.textContent = `Total: ${total}% ${total===100?'✓':'— should be 100%'}`;
   el.classList.toggle('bad', total!==100);
 }
-['wRecency','wFrequency','wMonetary'].forEach(id=>{
+['wRecency','wFrequency','wMonetary','wEvents'].forEach(id=>{
   document.getElementById(id).addEventListener('input', updateWeightTotal);
+});
+
+document.getElementById('eventsEnabled').addEventListener('change', e=>{
+  setEventsModuleEnabled(e.target.checked);
+  if(e.target.checked && (parseFloat(document.getElementById('wEvents').value)||0)===0){
+    document.getElementById('wEvents').value = 20; // sensible non-zero default so it visibly contributes
+  }
+  updateWeightTotal();
+});
+
+document.getElementById('autoBalanceBtn').addEventListener('click', ()=>{
+  const active = ['wRecency','wFrequency','wMonetary'];
+  if(hasEventsData && document.getElementById('eventsEnabled').checked) active.push('wEvents');
+  const share = Math.round(100/active.length);
+  active.forEach((id,i)=>{
+    // give any rounding remainder to the last field so the total lands exactly on 100
+    const val = (i===active.length-1) ? (100 - share*(active.length-1)) : share;
+    document.getElementById(id).value = val;
+  });
+  updateWeightTotal();
 });
 
 document.getElementById('resetBtn').addEventListener('click', ()=>{
@@ -573,6 +669,8 @@ function readAssumptionsFromUI(){
   assumptions.weights.recency = parseFloat(document.getElementById('wRecency').value)||0;
   assumptions.weights.frequency = parseFloat(document.getElementById('wFrequency').value)||0;
   assumptions.weights.monetary = parseFloat(document.getElementById('wMonetary').value)||0;
+  assumptions.eventsEnabled = hasEventsData && document.getElementById('eventsEnabled').checked;
+  assumptions.weights.events = assumptions.eventsEnabled ? (parseFloat(document.getElementById('wEvents').value)||0) : 0;
   assumptions.lookbackYears = parseFloat(document.getElementById('lookbackYears').value)||3;
 
   document.querySelectorAll('#recencyBands input').forEach(inp=>{
@@ -586,6 +684,10 @@ function readAssumptionsFromUI(){
   document.querySelectorAll('#monetaryBands input').forEach(inp=>{
     const i = +inp.dataset.idx;
     assumptions.monetaryBands[i].min = parseFloat(inp.value)||0;
+  });
+  document.querySelectorAll('#eventsBands input').forEach(inp=>{
+    const i = +inp.dataset.idx;
+    assumptions.eventsBands[i].min = parseFloat(inp.value)||0;
   });
   document.querySelectorAll('#tierCutoffs input').forEach(inp=>{
     const i = +inp.dataset.idx, field = inp.dataset.field;
@@ -613,6 +715,139 @@ document.getElementById('templateBtn').addEventListener('click', ()=>{
   const sample = 'Donor,Gift Date,Gift Amount\nJane Alvarez,2026-06-14,250\nJane Alvarez,2026-03-02,250\nMark Chen,2025-11-21,1000\nMark Chen,2024-05-03,750\nPriya Natarajan,2023-01-10,50\n';
   downloadCSV(sample, 'sample_gift_data_template.csv');
 });
+
+// ---------------------------------------------------------------
+// Event attendance CSV upload + parsing (optional, separate file)
+// ---------------------------------------------------------------
+const eventsDropzone = document.getElementById('eventsDropzone');
+const eventsFileInput = document.getElementById('eventsFileInput');
+eventsDropzone.addEventListener('click', ()=>eventsFileInput.click());
+eventsDropzone.addEventListener('dragover', e=>{ e.preventDefault(); eventsDropzone.classList.add('drag'); });
+eventsDropzone.addEventListener('dragleave', ()=> eventsDropzone.classList.remove('drag'));
+eventsDropzone.addEventListener('drop', e=>{
+  e.preventDefault(); eventsDropzone.classList.remove('drag');
+  if(e.dataTransfer.files.length) handleEventsFile(e.dataTransfer.files[0]);
+});
+eventsFileInput.addEventListener('change', e=>{
+  if(e.target.files.length) handleEventsFile(e.target.files[0]);
+});
+
+document.getElementById('eventsTemplateBtn').addEventListener('click', ()=>{
+  const sample = 'Donor,Event Date,Event Name\nJane Alvarez,2026-05-02,Spring Gala\nJane Alvarez,2025-10-11,Volunteer Appreciation Night\nMark Chen,2026-05-02,Spring Gala\n';
+  downloadCSV(sample, 'sample_event_attendance_template.csv');
+});
+
+document.getElementById('eventsClearBtn').addEventListener('click', ()=>{
+  eventRows = [];
+  parsedColumnsEvents = [];
+  colMapEvents = { donor:null, date:null };
+  hasEventsData = false;
+  window.__csvRawEvents = null;
+  eventsFileInput.value = '';
+  document.getElementById('eventsFileStatus').innerHTML = '';
+  document.getElementById('eventsMapping').style.display = 'none';
+  document.getElementById('eventsMapping').innerHTML = '';
+  document.getElementById('eventsClearBtn').style.display = 'none';
+  setEventsModuleEnabled(false);
+  updateWeightTotal();
+});
+
+function showEventsFileStatus(ok, html){
+  const el = document.getElementById('eventsFileStatus');
+  el.className = 'file-status' + (ok?'':' error');
+  el.innerHTML = html;
+}
+
+function handleEventsFile(file){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const { fields: headers, data } = parseCSV(e.target.result);
+      if(headers.length === 0){
+        showEventsFileStatus(false, 'That file looks empty, or not a valid CSV.');
+        return;
+      }
+      parsedColumnsEvents = headers;
+      colMapEvents.donor = guessColumn(headers, ['donor','donorid','constituentid','constituent','name','donorname']);
+      colMapEvents.date = guessColumn(headers, ['eventdate','date']);
+
+      window.__csvRawEvents = data;
+      renderEventsMappingUI(headers);
+      applyEventsMappingAndParse();
+    } catch(err){
+      showEventsFileStatus(false, 'Could not read that file: ' + err.message);
+    }
+  };
+  reader.onerror = function(){
+    showEventsFileStatus(false, 'Could not read that file. Please try again.');
+  };
+  reader.readAsText(file);
+}
+
+function renderEventsMappingUI(headers){
+  const el = document.getElementById('eventsMapping');
+  el.style.display = 'grid';
+  const opts = headers.map(h=>`<option value="${h}">${h}</option>`).join('');
+  el.innerHTML = `
+    <div class="map-row"><label>Donor</label>
+      <select id="mapEventsDonor">${opts}</select></div>
+    <div class="map-row"><label>Event Date</label>
+      <select id="mapEventsDate">${opts}</select></div>
+  `;
+  if(colMapEvents.donor) document.getElementById('mapEventsDonor').value = colMapEvents.donor;
+  if(colMapEvents.date) document.getElementById('mapEventsDate').value = colMapEvents.date;
+
+  ['mapEventsDonor','mapEventsDate'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', ()=>{
+      colMapEvents.donor = document.getElementById('mapEventsDonor').value;
+      colMapEvents.date = document.getElementById('mapEventsDate').value;
+      applyEventsMappingAndParse();
+    });
+  });
+}
+
+function applyEventsMappingAndParse(){
+  if(!colMapEvents.donor || !colMapEvents.date){
+    showEventsFileStatus(false, 'Pick which column is Donor and Event Date above.');
+    hasEventsData = false;
+    setEventsModuleEnabled(false);
+    updateWeightTotal();
+    return;
+  }
+  const data = window.__csvRawEvents || [];
+  const rows = [];
+  let skipped = 0;
+  for(const r of data){
+    const donor = (r[colMapEvents.donor]||'').toString().trim();
+    const dateVal = parseDateFlexible(r[colMapEvents.date]);
+    if(!donor || !dateVal){ skipped++; continue; }
+    rows.push({donor, date:dateVal});
+  }
+  eventRows = rows;
+
+  if(rows.length===0){
+    showEventsFileStatus(false, 'No usable rows found. Check the column mapping above.');
+    hasEventsData = false;
+    setEventsModuleEnabled(false);
+    updateWeightTotal();
+    return;
+  }
+
+  hasEventsData = true;
+  const donorCount = new Set(rows.map(r=>r.donor)).size;
+  showEventsFileStatus(true, `
+    <div class="fs-row"><span>Attendance rows parsed</span><b>${rows.length.toLocaleString()}</b></div>
+    <div class="fs-row"><span>Unique donors</span><b>${donorCount.toLocaleString()}</b></div>
+    ${skipped ? `<div class="fs-row"><span>Rows skipped</span><b style="color:var(--red)">${skipped}</b></div>` : ''}
+  `);
+  document.getElementById('eventsClearBtn').style.display = 'block';
+  setEventsModuleEnabled(true);
+  if((parseFloat(document.getElementById('wEvents').value)||0)===0){
+    document.getElementById('wEvents').value = 20;
+    assumptions.weights.events = 20;
+  }
+  updateWeightTotal();
+}
 
 function guessColumn(headers, candidates){
   const norm = h => h.toLowerCase().replace(/[^a-z]/g,'');
@@ -819,6 +1054,18 @@ function computeScores(){
   const wR = assumptions.weights.recency/100;
   const wF = assumptions.weights.frequency/100;
   const wM = assumptions.weights.monetary/100;
+  const wE = assumptions.eventsEnabled ? assumptions.weights.events/100 : 0;
+
+  // Join event attendance by a normalized donor key (trim + lowercase) so
+  // minor casing differences between the two CRM exports still match.
+  const eventsByDonorKey = new Map();
+  if(assumptions.eventsEnabled){
+    for(const r of eventRows){
+      if(r.date < windowStart) continue;
+      const key = r.donor.trim().toLowerCase();
+      eventsByDonorKey.set(key, (eventsByDonorKey.get(key)||0) + 1);
+    }
+  }
 
   const results = [];
   for(const [donor, gifts] of byDonor){
@@ -827,16 +1074,18 @@ function computeScores(){
     const giftsInWindow = inWindow.length;
     const totalInWindow = inWindow.reduce((s,g)=>s+g.amount,0);
     const daysSince = Math.floor((today - mostRecent)/86400000);
+    const eventsInWindow = assumptions.eventsEnabled ? (eventsByDonorKey.get(donor.trim().toLowerCase())||0) : 0;
 
     const recencyScore = scoreFromMaxBands(daysSince, assumptions.recencyBands);
     const freqScore = scoreFromMinBands(giftsInWindow, assumptions.frequencyBands);
     const monScore = scoreFromMinBands(totalInWindow, assumptions.monetaryBands);
-    const weighted = Math.round((recencyScore*wR + freqScore*wF + monScore*wM) * 20);
+    const eventScore = assumptions.eventsEnabled ? scoreFromMinBands(eventsInWindow, assumptions.eventsBands) : 0;
+    const weighted = Math.round((recencyScore*wR + freqScore*wF + monScore*wM + eventScore*wE) * 20);
     const {tier, owner} = assignTier(weighted, assumptions.tierCutoffs);
 
     results.push({
-      donor, mostRecent, daysSince, giftsInWindow, totalInWindow,
-      recencyScore, freqScore, monScore, weighted, tier, owner, allGifts: gifts
+      donor, mostRecent, daysSince, giftsInWindow, totalInWindow, eventsInWindow,
+      recencyScore, freqScore, monScore, eventScore, weighted, tier, owner, allGifts: gifts
     });
   }
   return results;
@@ -847,7 +1096,7 @@ function computeScores(){
 // ---------------------------------------------------------------
 document.getElementById('calcBtn').addEventListener('click', ()=>{
   readAssumptionsFromUI();
-  const total = assumptions.weights.recency + assumptions.weights.frequency + assumptions.weights.monetary;
+  const total = assumptions.weights.recency + assumptions.weights.frequency + assumptions.weights.monetary + assumptions.weights.events;
   if(total !== 100){
     if(!confirm(`Weights add up to ${total}%, not 100%. Scores will still calculate proportionally, but results may be misleading. Continue anyway?`)) return;
   }
@@ -892,7 +1141,7 @@ function renderStats(){
   el.innerHTML = html;
 }
 
-const COLUMNS = [
+const BASE_COLUMNS = [
   {key:'donor', label:'Donor', type:'text'},
   {key:'mostRecent', label:'Last Gift', type:'date'},
   {key:'daysSince', label:'Days Since', type:'num'},
@@ -901,12 +1150,26 @@ const COLUMNS = [
   {key:'recencyScore', label:'Rec.', type:'num'},
   {key:'freqScore', label:'Freq.', type:'num'},
   {key:'monScore', label:'Mon.', type:'num'},
+];
+const EVENTS_COLUMNS = [
+  {key:'eventsInWindow', label:'Events', type:'num'},
+  {key:'eventScore', label:'Ev.', type:'num'},
+];
+const TAIL_COLUMNS = [
   {key:'weighted', label:'Score', type:'num'},
   {key:'tier', label:'Tier', type:'tier'},
   {key:'owner', label:'Owner', type:'text'},
 ];
+// Events columns only appear in the table once event attendance is actually
+// enabled for the current results -- keeps the table uncluttered when unused.
+function getActiveColumns(){
+  return assumptions.eventsEnabled
+    ? [...BASE_COLUMNS, ...EVENTS_COLUMNS, ...TAIL_COLUMNS]
+    : [...BASE_COLUMNS, ...TAIL_COLUMNS];
+}
 
 function renderTableHead(){
+  const COLUMNS = getActiveColumns();
   const head = document.getElementById('scoresHead');
   head.innerHTML = COLUMNS.map(c=>{
     const arrow = currentSort.key===c.key ? (currentSort.dir==='asc'?'↑':'↓') : '';
@@ -947,6 +1210,7 @@ function fmtCell(r,c){
 }
 
 function renderTableBody(){
+  const COLUMNS = getActiveColumns();
   const rows = getFilteredSorted();
   const totalPages = Math.max(1, Math.ceil(rows.length/PAGE_SIZE));
   currentPage = Math.min(currentPage, totalPages);
@@ -1058,6 +1322,7 @@ function csvField(v){
 }
 
 document.getElementById('downloadScoresBtn').addEventListener('click', ()=>{
+  const COLUMNS = getActiveColumns();
   const rows = getFilteredSorted();
   const header = COLUMNS.map(c=>csvField(c.label)).join(',');
   const lines = rows.map(r=> COLUMNS.map(c=>{
