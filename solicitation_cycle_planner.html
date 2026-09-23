@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Solicitation Cycle Planner | Luis E. Marquez</title>
+<meta name="description" content="Turn a donor portfolio's gift history into a month-by-month solicitation plan with recommended ask amounts, delivered as an Excel workbook.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+  :root{
+    --ink:#0E1729; --ink-2:#16213B; --ink-3:#1D2A47;
+    --paper:#F2EFE6; --paper-dim:#E7E2D3; --paper-hi:#FBF9F3;
+    --gold:#D6A34C; --gold-soft:#E9C583;
+    --berry:#8C2F39; --berry-soft:#B5525D;
+    --mist:#9AA3B8; --mist-dim:#6C7690;
+    --line:rgba(242,239,230,0.14); --line-soft:rgba(14,23,41,0.12);
+    --paper-text:#3B3728; --paper-muted:#6b6650;
+    --maxw:1180px;
+    --disp:'Fraunces', Georgia, serif;
+    --body:'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth; scroll-padding-top:80px;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+  body{background:var(--ink); color:var(--paper); font-family:var(--body); line-height:1.5; -webkit-font-smoothing:antialiased; overflow-x:hidden;}
+  a{color:inherit;}
+  ul,ol{padding-left:1.2em;}
+  :focus-visible{outline:2px solid var(--gold); outline-offset:3px;}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 32px;}
+  @media (max-width:640px){ .wrap{padding:0 20px;} }
+  .num{font-variant-numeric:tabular-nums;}
+  .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);}
+
+  /* ---------- Nav ---------- */
+
+  /* ---------- Type ---------- */
+  .eyebrow{font-family:var(--mono); font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); margin-bottom:22px;}
+  .paper .eyebrow{color:var(--berry);}
+  section{padding:104px 0;}
+  @media (max-width:640px){ section{padding:72px 0;} }
+  .section-head{margin-bottom:44px; max-width:62ch;}
+  .section-head h2{font-family:var(--disp); font-weight:500; font-size:clamp(1.9rem,3.4vw,2.6rem); letter-spacing:-0.01em; line-height:1.1;}
+  .lede{margin-top:16px; color:var(--mist); font-size:1.02rem; max-width:60ch;}
+  .paper .lede{color:var(--paper-text);}
+  .subhead{font-family:var(--mono); font-size:0.74rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold-soft); margin:0 0 18px; padding-bottom:12px; border-bottom:1px solid var(--line);}
+  .paper .subhead{color:var(--berry); border-bottom-color:var(--line-soft);}
+  .reveal{opacity:0; transform:translateY(22px); transition:opacity .7s ease, transform .7s ease;}
+  .reveal.in{opacity:1; transform:translateY(0);}
+
+  /* ---------- Surfaces ---------- */
+  .paper{background:var(--paper); color:var(--ink);
+    --f-bg:var(--paper-hi); --f-line:rgba(14,23,41,0.22); --f-ink:var(--ink); --f-muted:var(--paper-muted);}
+  .deep{background:var(--ink-2); border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    --f-bg:var(--ink-3); --f-line:rgba(242,239,230,0.2); --f-ink:var(--paper); --f-muted:var(--mist);}
+  .closing{background:radial-gradient(900px 420px at 15% 0%, rgba(140,47,57,0.18), transparent 60%), var(--ink);
+    --f-bg:var(--ink-3); --f-line:rgba(242,239,230,0.2); --f-ink:var(--paper); --f-muted:var(--mist);}
+  .deep select,.closing select{color-scheme:dark;}
+
+  /* ---------- Buttons ---------- */
+  .btn{font-family:var(--mono); font-size:0.76rem; letter-spacing:0.06em; text-transform:uppercase; padding:14px 22px; border-radius:2px; text-decoration:none;
+    display:inline-flex; align-items:center; gap:10px; cursor:pointer; border:1px solid transparent; background:none; color:inherit;
+    transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease, color .18s ease;}
+  .btn-primary{background:var(--gold); color:var(--ink); font-weight:600;}
+  .btn-primary:hover:not(:disabled){transform:translateY(-2px); box-shadow:0 10px 24px -8px rgba(214,163,76,0.5);}
+  .btn-ghost{border-color:var(--line); color:var(--paper);}
+  .btn-ghost:hover{border-color:var(--gold-soft); color:var(--gold-soft); transform:translateY(-2px);}
+  .paper .btn-ghost{border-color:rgba(14,23,41,0.3); color:var(--ink);}
+  .paper .btn-ghost:hover{border-color:var(--berry); color:var(--berry);}
+  .btn.big{padding:17px 28px; font-size:0.8rem;}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+
+  /* ---------- Hero ---------- */
+  .hero{position:relative; padding:96px 0;
+    background:radial-gradient(1100px 480px at 82% -10%, rgba(214,163,76,0.16), transparent 60%), radial-gradient(700px 420px at -10% 20%, rgba(140,47,57,0.14), transparent 60%);}
+  .hero-grid{display:grid; grid-template-columns:1.05fr 0.95fr; gap:64px; align-items:end;}
+  @media (max-width:960px){ .hero-grid{grid-template-columns:1fr; gap:48px;} }
+  .hero h1{font-family:var(--disp); font-weight:500; font-size:clamp(2.6rem,6vw,4.6rem); line-height:0.98; letter-spacing:-0.01em;}
+  .hero h1 em{font-style:italic; font-weight:500; color:var(--gold-soft);}
+  .hero .role{margin-top:22px; font-size:1.15rem; color:var(--mist); max-width:44ch; font-weight:500;}
+  .hero .role strong{color:var(--paper); font-weight:600;}
+  .hero .intro{margin-top:18px; max-width:50ch; color:var(--mist);}
+  .cta-row{display:flex; gap:14px; margin-top:34px; flex-wrap:wrap;}
+  .ribbon-wrap{position:relative; z-index:0; padding:0 8px 8px 0;}
+  .ribbon-frame{position:relative; border:1px solid var(--line); padding:22px 20px 18px; background:rgba(14,23,41,0.55);}
+  .ribbon-frame::before{content:""; position:absolute; inset:-1px; border:1px solid var(--gold); transform:translate(8px,8px); z-index:-1; pointer-events:none;}
+  .ribbon-cap{font-family:var(--mono); font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--mist-dim); margin-bottom:16px;}
+  .ribbon{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:4px;}
+  .ribbon .m{display:flex; flex-direction:column; gap:8px;}
+  .ribbon .bar{height:132px; border-radius:1px; background:rgba(242,239,230,0.06); position:relative;}
+  .ribbon .bar.c{background:var(--mist);}
+  .ribbon .bar.a{background:var(--gold);}
+  .ribbon .bar.s{background:var(--berry-soft);}
+  .ribbon .bar span{position:absolute; left:0; right:0; bottom:8px; text-align:center; font-family:var(--mono); font-size:0.62rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink); font-weight:500;}
+  .ribbon .lbl{font-family:var(--mono); font-size:0.64rem; letter-spacing:0.04em; text-transform:uppercase; color:var(--mist); text-align:center;}
+  .legend{display:flex; flex-wrap:wrap; gap:18px; margin-top:16px; padding-top:14px; border-top:1px dashed var(--line); font-family:var(--mono); font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--mist);}
+  .legend i{display:inline-block; width:10px; height:10px; margin-right:7px; vertical-align:0;}
+  @media (prefers-reduced-motion:no-preference){
+    .ribbon .bar{transform-origin:bottom; animation:grow .8s cubic-bezier(.2,.7,.2,1) both; animation-delay:calc(var(--i) * 50ms + 150ms);}
+    @keyframes grow{from{transform:scaleY(.06); opacity:.2} to{transform:scaleY(1); opacity:1}}
+  }
+  @media (max-width:520px){ .ribbon .bar{height:96px;} .ribbon .lbl{font-size:0.56rem;} }
+
+  /* ---------- Step 1: paper ---------- */
+  .two{display:grid; grid-template-columns:0.95fr 1.05fr; gap:64px; align-items:start;}
+  @media (max-width:900px){ .two{grid-template-columns:1fr; gap:40px;} }
+  .callout{background:var(--paper-dim); border-left:3px solid var(--berry); padding:18px 20px; margin:0 0 30px; color:var(--ink);}
+  .callout strong{font-weight:700;}
+  .plain-list{list-style:none; padding:0; border-top:1px solid var(--line-soft);}
+  .plain-list li{padding:14px 0; border-bottom:1px dashed rgba(59,55,40,0.25); color:var(--paper-text); font-size:0.98rem;}
+  .plain-list li strong{display:block; color:var(--ink); font-weight:600; margin-bottom:2px;}
+  .table-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  table.ref{border-collapse:collapse; width:100%; font-size:0.93rem;}
+  table.ref th{font-family:var(--mono); font-size:0.68rem; font-weight:400; letter-spacing:0.06em; text-transform:uppercase; text-align:left; padding:0 10px 10px 0; color:var(--paper-muted); border-bottom:1px solid var(--line-soft);}
+  table.ref td{padding:12px 10px 12px 0; border-bottom:1px dashed rgba(59,55,40,0.25); vertical-align:top; color:var(--paper-text);}
+  table.ref td:first-child{color:var(--ink); font-weight:600; white-space:nowrap;}
+  .tag{display:inline-block; font-family:var(--mono); font-size:0.62rem; letter-spacing:0.08em; text-transform:uppercase; padding:2px 7px; border:1px solid var(--berry); color:var(--berry); white-space:nowrap;}
+  .tag.opt{border-color:rgba(14,23,41,0.25); color:var(--paper-muted);}
+  details.crm{border-bottom:1px dashed rgba(59,55,40,0.25);}
+  details.crm summary{cursor:pointer; list-style:none; padding:16px 0; font-family:var(--disp); font-weight:500; font-size:1.12rem; display:flex; justify-content:space-between; gap:12px;}
+  details.crm summary::-webkit-details-marker{display:none;}
+  details.crm summary::after{content:"+"; font-family:var(--mono); color:var(--berry); font-size:1.1rem; line-height:1;}
+  details.crm[open] summary::after{content:"\2212";}
+  details.crm ol{margin:0 0 18px; color:var(--paper-text); font-size:0.95rem;}
+  details.crm li{margin:6px 0; padding-left:4px;}
+  details.crm li strong{color:var(--ink);}
+
+  /* ---------- Step 2: deep ---------- */
+  .drop{border:1px dashed rgba(242,239,230,0.3); padding:48px 24px; text-align:center; background:rgba(242,239,230,0.02); transition:border-color .2s ease, background .2s ease;}
+  .drop.over{border-color:var(--gold); background:rgba(214,163,76,0.06);}
+  .drop .dt{font-family:var(--disp); font-weight:500; font-size:1.4rem;}
+  .drop .ds{font-family:var(--mono); font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--mist-dim); margin-top:6px;}
+  .drop .row{justify-content:center; margin-top:22px;}
+  .row{display:flex; flex-wrap:wrap; gap:12px; align-items:center;}
+  .fileinfo{margin-top:18px; color:var(--mist); font-size:0.95rem;}
+  .fileinfo strong{color:var(--paper); font-weight:600;}
+  .paper .fileinfo{color:var(--paper-text);}
+  #mapping{margin-top:44px;}
+  .mapgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px 20px;}
+  .warn{border-left:3px solid var(--gold); background:rgba(214,163,76,0.08); color:var(--gold-soft); padding:12px 16px; margin:14px 0; font-size:0.94rem;}
+  .paper .warn{border-left-color:var(--berry); background:rgba(140,47,57,0.07); color:var(--berry);}
+
+  /* ---------- Forms ---------- */
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:18px 22px;}
+  label.f{display:flex; flex-direction:column; gap:7px; font-size:0.9rem; font-weight:600;}
+  label.f small{font-weight:400; color:var(--f-muted); font-size:0.8rem; line-height:1.35;}
+  input[type=text],input[type=number],select{font:inherit; font-size:0.95rem; font-weight:400; padding:10px 12px; border:1px solid var(--f-line); border-radius:2px; background:var(--f-bg); color:var(--f-ink); width:100%;}
+  input::placeholder{color:var(--f-muted); opacity:.8;}
+  input[type=number]{font-variant-numeric:tabular-nums;}
+  input:focus-visible,select:focus-visible{outline:2px solid var(--gold); outline-offset:1px;}
+  input:disabled{opacity:.5;}
+  .check{display:flex; gap:10px; align-items:flex-start; font-size:0.92rem;}
+  .check input{margin-top:3px; width:17px; height:17px; accent-color:var(--berry); flex:none;}
+  .closing .check input,.deep .check input{accent-color:var(--gold);}
+  .pct,.usd{position:relative; display:block;}
+  .pct input{padding-right:30px;}
+  .pct::after{content:"%"; position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--f-muted); font-size:0.9rem; pointer-events:none;}
+  .usd input{padding-left:24px;}
+  .usd::before{content:"$"; position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--f-muted); font-size:0.9rem; pointer-events:none;}
+  fieldset{border:0; border-top:1px solid var(--line-soft); margin:40px 0 0; padding:32px 0 0; display:grid; grid-template-columns:260px 1fr; gap:24px 48px;}
+  fieldset:first-of-type{border-top:0; margin-top:0; padding-top:0;}
+  @media (max-width:900px){ fieldset{grid-template-columns:1fr;} }
+  .fs-head legend{float:left; width:100%; font-family:var(--disp); font-weight:500; font-size:1.45rem; line-height:1.2; margin-bottom:8px;}
+  .fs-head p{clear:both; color:var(--paper-text); font-size:0.93rem;}
+  .fs-body{min-width:0;}
+  .fs-body h3{font-family:var(--mono); font-weight:400; font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--berry); margin:30px 0 14px;}
+  .fs-body h3:first-child{margin-top:0;}
+  table.tiers{border-collapse:collapse; width:100%; min-width:600px;}
+  table.tiers th{font-family:var(--mono); font-size:0.66rem; font-weight:400; letter-spacing:0.06em; text-transform:uppercase; color:var(--paper-muted); text-align:left; padding:0 10px 8px 0; vertical-align:bottom;}
+  table.tiers td{padding:5px 10px 5px 0;}
+  .weights{display:grid; grid-template-columns:repeat(12,minmax(56px,1fr)); gap:6px; min-width:700px;}
+  .weights label{display:flex; flex-direction:column; gap:6px; font-family:var(--mono); font-size:0.66rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--paper-muted); text-align:center;}
+  .weights input{text-align:center; padding:9px 4px;}
+  .reset-row{margin-top:44px; padding-top:28px; border-top:1px solid var(--line-soft);}
+
+  /* ---------- Step 4: results ---------- */
+  #results{display:none; margin-top:64px;}
+  #resTitle{font-family:var(--disp); font-weight:500; font-size:clamp(1.6rem,2.8vw,2.1rem); line-height:1.15; margin-bottom:26px;}
+  #resTitle em{font-style:italic; color:var(--gold-soft);}
+  .figs{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); border-top:1px solid var(--line); border-left:1px solid var(--line); margin-bottom:56px;}
+  .fig{border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:24px 22px;}
+  .fig span{display:block; font-family:var(--mono); font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--mist-dim);}
+  .fig b{display:block; margin-top:12px; font-family:var(--disp); font-weight:500; font-size:1.9rem; line-height:1.1; font-variant-numeric:tabular-nums; color:var(--paper);}
+  .fig.gold b{color:var(--gold-soft);}
+  .key{display:flex; flex-wrap:wrap; gap:20px; margin:-6px 0 18px; font-family:var(--mono); font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--mist);}
+  .key i{display:inline-block; width:10px; height:10px; margin-right:7px;}
+  .plan-ribbon{display:grid; grid-template-columns:repeat(12,minmax(66px,1fr)); gap:6px; min-width:820px; align-items:end;}
+  .plan-ribbon .col{display:flex; flex-direction:column; gap:6px;}
+  .plan-ribbon .stack{height:170px; display:flex; flex-direction:column; justify-content:flex-end; background:rgba(242,239,230,0.04); overflow:hidden;}
+  .plan-ribbon .stack .act{background:var(--mist-dim);}
+  .plan-ribbon .stack .proj{background:var(--gold);}
+  .plan-ribbon .mname{font-family:var(--mono); font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--paper); margin-top:4px;}
+  .plan-ribbon .col.past .mname{color:var(--mist-dim);}
+  .plan-ribbon .amt{font-size:0.84rem; font-weight:600; font-variant-numeric:tabular-nums;}
+  .plan-ribbon .meta{font-size:0.76rem; color:var(--mist); line-height:1.4;}
+  .res-block{margin-top:56px;}
+  table.top{border-collapse:collapse; width:100%; min-width:600px; font-size:0.95rem;}
+  table.top th{font-family:var(--mono); font-size:0.66rem; font-weight:400; letter-spacing:0.08em; text-transform:uppercase; color:var(--mist-dim); text-align:left; padding:0 12px 10px 0; border-bottom:1px solid var(--line);}
+  table.top td{padding:13px 12px 13px 0; border-bottom:1px solid var(--line); color:var(--mist);}
+  table.top td:first-child{color:var(--paper); font-weight:600;}
+  table.top td.r,table.top th.r{text-align:right;}
+  table.top td strong{color:var(--gold-soft); font-weight:600;}
+  .dl{display:grid; grid-template-columns:auto 1fr; gap:18px 28px; align-items:center; margin-top:56px; padding:28px; border:1px solid var(--line);}
+  @media (max-width:700px){ .dl{grid-template-columns:1fr;} }
+  .dl p{color:var(--mist); font-size:0.94rem; max-width:62ch;}
+  .fineprint{margin-top:28px; color:var(--mist-dim); font-size:0.88rem; max-width:70ch;}
+
+  footer{border-top:1px solid var(--line); padding:32px 0; padding-bottom:calc(32px + env(safe-area-inset-bottom,0px)); color:var(--mist-dim); font-family:var(--mono); font-size:0.72rem; letter-spacing:0.03em;}
+  footer .wrap{display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+  footer a{text-decoration:none;} footer a:hover{color:var(--gold-soft);}
+
+  /* Shared Vault tool nav */
+  .mq-nav{position:sticky; top:0; z-index:9999; background:#0E1729; border-bottom:1px solid rgba(242,239,230,0.14); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  .mq-nav-wrap{max-width:1180px; margin:0 auto; padding:6px 24px; min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .mq-nav-brand{font-family:Georgia,'Times New Roman',serif; font-weight:600; color:#F2EFE6; text-decoration:none; font-size:0.88rem; letter-spacing:0.01em;}
+  .mq-nav-brand span{color:#D6A34C;}
+  .mq-nav-links{display:flex; gap:18px; flex-wrap:wrap;}
+  .mq-nav-links a{color:#9AA3B8; text-decoration:none; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; font-weight:600; transition:color .2s ease; white-space:nowrap;}
+  .mq-nav-links a:hover, .mq-nav-links a:focus-visible{color:#E9C583;}
+  .mq-nav-links a.mq-active{color:#D6A34C;}
+  @media (max-width:760px){ .mq-nav-links{gap:14px;} .mq-nav-links a{font-size:9.5px;} }
+</style>
+</head>
+<body>
+<header class="mq-nav">
+  <div class="mq-nav-wrap">
+    <a class="mq-nav-brand" href="index.html">Luis E. <span>Marquez</span></a>
+    <nav class="mq-nav-links">
+      <a href="index.html">Home</a>
+      <a href="portfolio_scorecard.html">Portfolio Scoresheet</a>
+      <a href="donor_weighing_scoring_tool.html">Donor Scoring</a>
+      <a href="donor_weighing_scoring_tool_v2.html">Donor Scoring v2</a>
+      <a href="portfoliorevenuebenchmark.html">Revenue Benchmark</a>
+      <a href="utm_link_builder.html">UTM Builder</a>
+      <a href="metrics_dashboard.html">Metrics Dashboard</a>
+      <a href="solicitation_cycle_planner.html" class="mq-active">Solicitation Planner</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow">The Vault &nbsp;/&nbsp; Tools</div>
+        <h1>Solicitation<br>Cycle <em>Planner</em></h1>
+        <p class="role">Turn a portfolio's gift history into a <strong>month-by-month solicitation calendar</strong> with a recommended ask for every donor.</p>
+        <p class="intro">Load an export from your database, set how you like to plan, and download the full plan in Excel. Your data never leaves your browser.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#step1">Start with your data</a>
+          <button class="btn btn-ghost" id="heroSample" type="button">Try sample data</button>
+        </div>
+      </div>
+      <div class="ribbon-wrap">
+        <div class="ribbon-frame">
+          <div class="ribbon-cap" id="heroCap">Example donor cycle</div>
+          <div class="ribbon" id="heroRibbon" aria-label="Example of one donor's cultivation, ask, and stewardship across the fiscal year"></div>
+          <div class="legend"><span><i style="background:var(--mist)"></i>Cultivate</span><span><i style="background:var(--gold)"></i>Ask</span><span><i style="background:var(--berry-soft)"></i>Steward</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 1 -->
+  <section class="paper" id="step1">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">Step 01</div>
+        <h2>Pull your gift history.</h2>
+        <p class="lede">The planner reads one row per gift. Run a gift query or report on your portfolio and export it to CSV or Excel.</p>
+      </div>
+      <div class="two">
+        <div class="reveal">
+          <div class="callout" id="rangeCallout"></div>
+          <div class="subhead">How much data to provide</div>
+          <ul class="plain-list">
+            <li><strong>Time span</strong>Every gift from the first day of the fiscal year five years ago through today. Three full fiscal years is the minimum; five lets the planner spot each donor's usual giving month and trend.</li>
+            <li><strong>Donors</strong>One portfolio at a time works best, typically 75 to 250 donors. A team file works too if it includes a solicitor column; you can plan one gift officer at a time.</li>
+            <li><strong>Rows</strong>One row per gift, not one row per donor. Files up to about 100,000 rows run comfortably.</li>
+            <li><strong>Gift types</strong>Include cash, pledge payments, stock, and recurring gift payments. Leave out pledge commitments (their payments are already counted), soft credits, and matching gifts credited to a company.</li>
+          </ul>
+        </div>
+        <div class="reveal">
+          <div class="subhead">Columns to include</div>
+          <div class="table-scroll">
+          <table class="ref">
+            <thead><tr><th>Column</th><th></th><th>Used for</th></tr></thead>
+            <tbody>
+              <tr><td>Donor ID</td><td><span class="tag">Required</span></td><td>Groups gifts by donor. Constituent ID, account ID, or any unique donor number.</td></tr>
+              <tr><td>Gift date</td><td><span class="tag">Required</span></td><td>Places each gift in a fiscal year and month. MM/DD/YYYY or YYYY-MM-DD.</td></tr>
+              <tr><td>Gift amount</td><td><span class="tag">Required</span></td><td>Builds yearly totals, trends, and the ask.</td></tr>
+              <tr><td>Donor name</td><td><span class="tag opt">Recommended</span></td><td>Makes the plan readable. Without it, the plan shows IDs.</td></tr>
+              <tr><td>Rated capacity</td><td><span class="tag opt">Optional</span></td><td>A dollar amount or range from wealth screening, such as "$25,000 - $49,999." Keeps asks in line with capacity and flags stretch opportunities.</td></tr>
+              <tr><td>Solicitor</td><td><span class="tag opt">Optional</span></td><td>Lets you plan one gift officer's portfolio from a team file.</td></tr>
+            </tbody>
+          </table>
+          </div>
+
+          <div class="subhead" style="margin-top:44px">Step-by-step for your database</div>
+          <details class="crm">
+            <summary>Raiser's Edge (database view)</summary>
+            <ol>
+              <li>Go to Query, then New Query, and choose a <strong>Gift</strong> query (dynamic).</li>
+              <li>Criteria: <strong>Gift Date</strong> between <span class="js-start"></span> and today. <strong>Gift Type</strong> one of Cash, Pay-Cash, Stock/Property, Stock/Property (Sold), Recurring Gift Pay-Cash.</li>
+              <li>Portfolio criteria: <strong>Constituent Information, Solicitors, Name</strong> equals the gift officer (skip this to pull the whole team). Add <strong>Deceased</strong> equals No.</li>
+              <li>Output: <strong>Constituent ID</strong>, <strong>Name</strong>, <strong>Gift Date</strong>, <strong>Gift Amount</strong>. Optional: your capacity rating from <strong>Prospect, Ratings</strong> and <strong>Solicitors, Name</strong>.</li>
+              <li>Run the query and export it to CSV.</li>
+            </ol>
+          </details>
+          <details class="crm">
+            <summary>Raiser's Edge NXT (web view)</summary>
+            <ol>
+              <li>Open Lists, then <strong>Gifts</strong>.</li>
+              <li>Filter <strong>Gift date</strong> on or after <span class="js-start"></span> and <strong>Gift type</strong> to cash, pledge payments, stock, and recurring gift payments.</li>
+              <li>Filter <strong>Fundraiser</strong> to the gift officer, or leave it open for the whole team.</li>
+              <li>Columns: Constituent lookup ID, Constituent name, Gift date, Gift amount, and optionally Fundraiser and a capacity rating.</li>
+              <li>Export the list to CSV.</li>
+            </ol>
+          </details>
+          <details class="crm">
+            <summary>Salesforce, Bloomerang, Virtuous, or another CRM</summary>
+            <ol>
+              <li>Build a gift, donation, or Opportunity report with received or Closed Won gifts only.</li>
+              <li>Date filter: gift or close date on or after <span class="js-start"></span>.</li>
+              <li>Filter to the portfolio owner or relationship manager.</li>
+              <li>Columns: Account or constituent ID, Account name, Gift or close date, Amount, and optionally Owner and a capacity field.</li>
+              <li>Export as CSV, details only, no subtotals.</li>
+            </ol>
+          </details>
+          <div class="row" style="margin-top:28px"><button class="btn btn-ghost" id="sampleDl" type="button">Download a sample file</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="deep" id="step2">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">Step 02</div>
+        <h2>Load your file.</h2>
+        <p class="lede">Your file is read inside this browser window. Nothing is uploaded or stored on a server.</p>
+      </div>
+      <div class="drop reveal" id="drop">
+        <div class="dt">Drop a CSV or Excel file here</div>
+        <div class="ds">.csv &nbsp;/&nbsp; .xlsx &nbsp;/&nbsp; .xls</div>
+        <div class="row">
+          <label class="btn btn-primary" for="file">Choose file</label>
+          <input id="file" type="file" accept=".csv,.txt,.xlsx,.xls" class="sr">
+          <button class="btn btn-ghost" id="useSample" type="button">Try sample data</button>
+        </div>
+      </div>
+      <div id="fileInfo" class="fileinfo"></div>
+      <div id="mapping" style="display:none">
+        <div class="subhead">Confirm your columns</div>
+        <p class="lede" style="margin:-4px 0 22px">The planner matched these automatically. Change any that look wrong.</p>
+        <div class="mapgrid" id="mapGrid"></div>
+        <div id="parseInfo" class="fileinfo"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="paper" id="step3">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">Step 03</div>
+        <h2>Set your planning assumptions.</h2>
+        <p class="lede">These defaults reflect common major and mid-level gift practice. Adjust them to fit your shop; the planner remembers your choices on this device.</p>
+      </div>
+
+      <fieldset>
+        <div class="fs-head"><legend>Fiscal year</legend><p>Which year to plan and where scheduling begins.</p></div>
+        <div class="fs-body"><div class="grid">
+          <label class="f">Fiscal year starts in <select id="fyStart"></select></label>
+          <label class="f">Name fiscal years by <select id="fyNaming"><option value="end">The year they end</option><option value="start">The year they start</option></select></label>
+          <label class="f">Plan for <select id="targetFY"></select></label>
+          <label class="f">Start scheduling in <select id="planStart"></select><small>Earlier months count as complete. Gifts already received there still count.</small></label>
+          <label class="f">Plan title <input type="text" id="planName" placeholder="e.g. Major Gifts Portfolio"></label>
+          <label class="f">Gift officer <select id="solicitor"><option value="">Everyone in the file</option></select><small>Available when your file has a solicitor column.</small></label>
+        </div></div>
+      </fieldset>
+
+      <fieldset>
+        <div class="fs-head"><legend>Ask amounts</legend><p>Each ask starts from the donor's giving history, then grows by the upgrade set for their giving pattern.</p></div>
+        <div class="fs-body">
+          <div class="grid">
+            <label class="f">Start the ask from
+              <select id="basis">
+                <option value="greater">Higher of last year or the multi-year average</option>
+                <option value="last">Last fiscal year's total</option>
+                <option value="avg">Multi-year average</option>
+                <option value="highest">Best fiscal year in the last five</option>
+                <option value="largest">Largest single gift in the last five years</option>
+              </select>
+            </label>
+            <label class="f">Years in the average <select id="lookback"><option value="2">2 years</option><option value="3" selected>3 years</option><option value="4">4 years</option><option value="5">5 years</option></select></label>
+            <label class="f">Minimum ask <span class="usd"><input type="number" id="minAsk" min="0" step="25" value="250"></span></label>
+            <label class="f">Round asks to
+              <select id="rounding"><option value="smart">Nearest clean amount, always an upgrade</option><option value="up">Next clean amount up</option><option value="none">Exact dollars</option></select>
+              <small>Clean amounts follow a gift ladder: $1,000, $1,250, $1,500, $2,000, $2,500 and so on.</small>
+            </label>
+          </div>
+          <h3>Upgrade by giving pattern</h3>
+          <div class="grid">
+            <label class="f">Growing donors <small>Gave at least 10% more last year</small><span class="pct"><input type="number" id="upGrowing" min="0" max="200" step="1" value="20"></span></label>
+            <label class="f">Steady donors <small>Gave about the same</small><span class="pct"><input type="number" id="upSteady" min="0" max="200" step="1" value="10"></span></label>
+            <label class="f">Declining donors <small>Gave 20% or more below the year before</small><span class="pct"><input type="number" id="upDeclining" min="0" max="200" step="1" value="0"></span></label>
+            <label class="f">New donors <small>First gift came last year or this year</small><span class="pct"><input type="number" id="upNew" min="0" max="200" step="1" value="25"></span></label>
+            <label class="f">Lapsed donors, ask for <small>Share of their last annual total (gave two years ago, not last year)</small><span class="pct"><input type="number" id="reLapsed" min="0" max="200" step="5" value="100"></span></label>
+            <label class="f">Long-lapsed donors, ask for <small>Share of their last annual total (last gave three to five years ago)</small><span class="pct"><input type="number" id="reLong" min="0" max="200" step="5" value="75"></span></label>
+          </div>
+          <h3>Capacity</h3>
+          <div class="grid">
+            <label class="check" style="grid-column:1/-1"><input type="checkbox" id="useCap" checked><span>Use rated capacity when the file includes it</span></label>
+            <label class="f">Annual ask ceiling, share of rated capacity
+              <span class="pct"><input type="number" id="capPct" min="1" max="100" step="1" value="20"></span>
+              <small>20% treats a screening figure as five-year capacity. Asks never drop below what a donor already gives.</small>
+            </label>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <div class="fs-head"><legend>Tiers and cycle length</legend><p>Tiers are set by ask size. Larger gifts get more cultivation before the ask and more stewardship after.</p></div>
+        <div class="fs-body">
+          <div class="table-scroll">
+            <table class="tiers">
+              <thead><tr><th>Tier name</th><th>Asks of at least</th><th>Cultivation touches before</th><th>Stewardship touches after</th></tr></thead>
+              <tbody id="tierBody"></tbody>
+            </table>
+          </div>
+          <div class="grid" style="margin-top:18px">
+            <label class="f">Months between touches <select id="gap"><option value="1" selected>1 month</option><option value="2">2 months</option></select></label>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <div class="fs-head"><legend>Calendar</legend><p>Give each month an emphasis from 0 to 3. Higher months draw more asks; 0 keeps a month free of asks while cultivation and stewardship continue.</p></div>
+        <div class="fs-body">
+          <div class="table-scroll"><div class="weights" id="weights"></div></div>
+          <div class="grid" style="margin-top:22px">
+            <label class="check"><input type="checkbox" id="honorMonth" checked><span>Ask in each donor's usual giving month when their history shows one</span></label>
+            <label class="check"><input type="checkbox" id="boostEnd" checked><span>Add emphasis to the last month of the fiscal year</span></label>
+            <label class="f">Most asks in one month <input type="number" id="maxAsks" min="0" step="1" value="0"><small>0 spreads the workload automatically.</small></label>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <div class="fs-head"><legend>Forecast</legend><p>Likelihood that an ask closes this fiscal year. Weighted projections multiply each remaining ask by its likelihood.</p></div>
+        <div class="fs-body"><div class="grid">
+          <label class="f">Growing<span class="pct"><input type="number" id="pGrowing" min="0" max="100" value="85"></span></label>
+          <label class="f">Steady<span class="pct"><input type="number" id="pSteady" min="0" max="100" value="80"></span></label>
+          <label class="f">Declining<span class="pct"><input type="number" id="pDeclining" min="0" max="100" value="60"></span></label>
+          <label class="f">New<span class="pct"><input type="number" id="pNew" min="0" max="100" value="50"></span></label>
+          <label class="f">Lapsed<span class="pct"><input type="number" id="pLapsed" min="0" max="100" value="35"></span></label>
+          <label class="f">Long lapsed<span class="pct"><input type="number" id="pLong" min="0" max="100" value="15"></span></label>
+          <label class="f">Portfolio goal for the year <span class="usd"><input type="number" id="goal" min="0" step="1000" placeholder="Optional"></span></label>
+          <label class="check" style="align-self:end"><input type="checkbox" id="includeLong" checked><span>Schedule asks for long-lapsed donors</span></label>
+        </div></div>
+      </fieldset>
+      <div class="reset-row"><button class="btn btn-ghost" id="resetDefaults" type="button">Restore default assumptions</button></div>
+    </div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section class="closing" id="step4">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">Step 04</div>
+        <h2>Build the plan.</h2>
+        <p class="lede" id="buildHint">Load a file in step 2 to build your plan.</p>
+      </div>
+      <button class="btn btn-primary big" id="build" type="button" disabled>Build solicitation plan</button>
+      <div id="buildMsg"></div>
+
+      <div id="results" aria-live="polite">
+        <h3 id="resTitle"></h3>
+        <div class="figs" id="figs"></div>
+        <div class="subhead">Month by month</div>
+        <div class="key"><span><i style="background:var(--mist-dim)"></i>Received so far</span><span><i style="background:var(--gold)"></i>Weighted projection from asks</span></div>
+        <div class="table-scroll"><div class="plan-ribbon" id="planRibbon"></div></div>
+        <div class="res-block">
+          <div class="subhead">Largest asks</div>
+          <div class="table-scroll"><table class="top" id="topTable"></table></div>
+        </div>
+        <div id="notes"></div>
+        <div class="dl">
+          <button class="btn btn-primary big" id="download" type="button">Download Excel plan</button>
+          <p>Six tabs: summary, monthly plan, monthly to-do list, cycle calendar, donor-by-donor asks, and the assumptions used. Totals are live formulas, so any ask you change in Excel flows through.</p>
+        </div>
+        <p class="fineprint">Ask amounts are starting points for your judgment, not a substitute for knowing your donors.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="year"></span> Luis E. Marquez</span>
+    <span><a href="index.html#vault">Back to the Vault</a></span>
+  </div>
+</footer>
+
+<script id="engine">
+var Engine = (function(){
+'use strict';
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var MON_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var SEGMENTS=['Growing','Steady','Declining','New','Lapsed','Long lapsed'];
+
+/* ---------- Fiscal calendar ---------- */
+function fyOf(d,S){ var m=d.getMonth()+1, y=d.getFullYear(); if(S===1) return y; return m>=S? y+1 : y; }
+function fyMonths(fy,S){ var startY=(S===1)?fy:fy-1, out=[]; for(var i=0;i<12;i++){ var k=S-1+i, m=(k%12)+1, y=startY+Math.floor(k/12); out.push({idx:i,y:y,m:m,label:MON[m-1]+' '+y,full:MON_FULL[m-1]+' '+y}); } return out; }
+function fyName(fy,S,naming){ return 'FY'+((naming==='start'&&S!==1)?fy-1:fy); }
+function fyIndex(d,S){ return ((d.getMonth()+1)-S+12)%12; }
+function fyStartDate(fy,S){ var ms=fyMonths(fy,S); return new Date(ms[0].y,ms[0].m-1,1); }
+
+/* ---------- Parsing ---------- */
+function norm(h){ return String(h==null?'':h).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
+var RULES={
+  date:{inc:[/^gift date$/,/\b(gift|donation|close|received|transaction|payment|deposit) date\b/,/^date$/,/\bdate\b/],exc:/first|last|birth|added|changed|batch|deceased|largest|pledge|anniversary|post|due|install/},
+  amount:{inc:[/^gift amount$/,/\b(gift|donation|payment|transaction|receipt) amount\b/,/^amount$/,/\bamount\b/],exc:/pledge|balance|largest|first|last|lifetime|total|soft|match|goal|capacity|ask|recognition|previous|install/},
+  id:{inc:[/^(constituent|cons|donor|account|record|lookup|supporter|contact)?\s?id$/,/\b(constituent|donor|account|record|lookup|supporter|contact) (id|number|no)\b/,/\bid\b/],exc:/gift|appeal|fund|campaign|batch|solicitor|fundraiser|package|import|owner|receipt/},
+  solicitor:{inc:[/solicitor/,/fundraiser/,/gift officer/,/\b(relationship|portfolio|account) (manager|owner)\b/,/\bowner\b/,/assigned/],exc:/date|\bid\b|type/},
+  capacity:{inc:[/capacity/,/wealth/,/\b(prospect|major gift|mg|philanthropic) rating\b/,/rating/],exc:/date|source|type/},
+  name:{inc:[/^(full )?name$/,/\b(constituent|donor|account|supporter|contact|preferred|display|sort|full) name\b/,/addressee/,/\bname\b/],exc:/solicitor|fundraiser|appeal|fund|campaign|owner|officer|manager|first|last|middle|package|type|salutation/}
+};
+var FIELD_ORDER=['date','amount','id','solicitor','capacity','name'];
+function detectColumns(headers){
+  var used={}, map={};
+  FIELD_ORDER.forEach(function(f){
+    var r=RULES[f];
+    for(var p=0;p<r.inc.length&&!map[f];p++){
+      for(var i=0;i<headers.length;i++){
+        var h=norm(headers[i]); if(used[headers[i]]||!h) continue;
+        if(r.exc.test(h)) continue;
+        if(r.inc[p].test(h)){ map[f]=headers[i]; used[headers[i]]=1; break; }
+      }
+    }
+  });
+  return map;
+}
+function parseAmount(v){
+  if(typeof v==='number') return isFinite(v)?v:NaN;
+  if(v==null) return NaN; var s=String(v).trim(); if(!s) return NaN;
+  var neg=/^\(.*\)$/.test(s)||/^-/.test(s)||/-$/.test(s)||/^\$\s*-/.test(s);
+  s=s.replace(/[^0-9.]/g,''); if(!s) return NaN; var n=parseFloat(s); if(!isFinite(n)) return NaN; return neg?-n:n;
+}
+function mk(y,m,d){ var dt=new Date(y,m-1,d); if(dt.getFullYear()!==y||dt.getMonth()!==m-1||dt.getDate()!==d) return null; return dt; }
+function parseDate(v){
+  if(v instanceof Date){ if(isNaN(v.getTime())) return null; var t=new Date(v.getTime()+43200000); return new Date(t.getFullYear(),t.getMonth(),t.getDate()); }
+  if(typeof v==='number'){ if(v>20000&&v<80000){ var u=new Date(Math.round((v-25569)*86400000)); return new Date(u.getUTCFullYear(),u.getUTCMonth(),u.getUTCDate()); } return null; }
+  var s=String(v==null?'':v).trim(); if(!s) return null; var m;
+  if((m=s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))) return mk(+m[1],+m[2],+m[3]);
+  if((m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})\b/))){ var y=+m[3]; if(y<100) y+=(y<50?2000:1900); return mk(y,+m[1],+m[2]); }
+  if(/^\d{5}(\.\d+)?$/.test(s)) return parseDate(parseFloat(s));
+  var t2=Date.parse(s); if(!isNaN(t2)){ var d=new Date(t2); return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+  return null;
+}
+function parseCapacity(v){
+  if(typeof v==='number') return v>=100?v:null;
+  var s=String(v==null?'':v).replace(/,/g,''); if(!s.trim()) return null;
+  var re=/\$?\s*(\d+(?:\.\d+)?)\s*(mm|million|thousand|k|m)?(?![a-z])/gi, vals=[], m;
+  while((m=re.exec(s))){ var n=parseFloat(m[1]), u=(m[2]||'').toLowerCase(); if(u==='k'||u==='thousand') n*=1e3; else if(u) n*=1e6; vals.push(n); }
+  vals=vals.filter(function(n){return n>=100;}); if(!vals.length) return null;
+  return Math.min.apply(null,vals);
+}
+function toGifts(rows,map){
+  var gifts=[], skipped=0, reasons={date:0,amount:0,id:0};
+  rows.forEach(function(r){
+    var id=String(r[map.id]==null?'':r[map.id]).trim();
+    var date=parseDate(r[map.date]); var amt=parseAmount(r[map.amount]);
+    if(!id){reasons.id++;skipped++;return;} if(!date){reasons.date++;skipped++;return;} if(isNaN(amt)){reasons.amount++;skipped++;return;}
+    if(amt===0) return;
+    gifts.push({id:id,name:map.name?String(r[map.name]==null?'':r[map.name]).trim():'',date:date,amount:amt,
+      capacity:map.capacity?parseCapacity(r[map.capacity]):null,solicitor:map.solicitor?String(r[map.solicitor]==null?'':r[map.solicitor]).trim():''});
+  });
+  return {gifts:gifts,skipped:skipped,reasons:reasons};
+}
+
+/* ---------- Ask rounding ---------- */
+var LADDER=(function(){ var a=[25,50,75]; [100,1000,10000,100000,1000000].forEach(function(p){[1,1.25,1.5,2,2.5,3,3.5,4,5,6,7.5].forEach(function(k){a.push(Math.round(k*p));});}); a.push(10000000); return a; })();
+function roundAsk(x,mode,floor){
+  if(!(x>0)) return 0;
+  if(mode==='none') return Math.round(x);
+  if(x>10000000) return Math.ceil(x/1e6)*1e6;
+  var i;
+  if(mode==='up'){ for(i=0;i<LADDER.length;i++) if(LADDER[i]>=x-0.005) return LADDER[i]; }
+  var best=LADDER[0]; for(i=0;i<LADDER.length;i++) if(Math.abs(LADDER[i]-x)<Math.abs(best-x)) best=LADDER[i];
+  if(floor>0&&best<=floor+0.005){ for(i=0;i<LADDER.length;i++) if(LADDER[i]>floor+0.005) return LADDER[i]; }
+  return best;
+}
+
+/* ---------- Touch vocabulary ---------- */
+var CULT=[['Personal visit','Program or site visit','Leadership briefing','Impact conversation','Pre-ask meeting'],
+  ['Personal visit','Impact update call','Event or tour invitation','Pre-ask conversation'],
+  ['Thank-you and update call','Impact story mailing','Pre-ask call'],
+  ['Impact story mailing','Personal note']];
+var STEW=[['Personal thank-you and recognition','Impact report','Leadership update','Anniversary check-in','Year-in-review visit'],
+  ['Personal thank-you and recognition','Impact report','Program update','Anniversary check-in'],
+  ['Thank-you call','Impact report','Program update'],
+  ['Thank-you note','Impact report']];
+function cultLabels(ti,n){ var l=CULT[Math.min(ti,3)], out=[]; for(var k=0;k<n;k++){ var j=l.length-n+k; out.push(j>=0?l[j]:'Cultivation touch'); } return out; }
+function stewLabels(ti,n){ var l=STEW[Math.min(ti,3)], out=[]; for(var k=0;k<n;k++) out.push(k<l.length?l[k]:'Stewardship touch'); return out; }
+
+function money(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+
+/* ---------- Plan ---------- */
+function buildPlan(gifts,cfg){
+  var S=cfg.fyStart, T=cfg.targetFY, today=cfg.today||new Date(), L=cfg.lookback;
+  var months=fyMonths(T,S), planStart=cfg.planStart, gap=cfg.gap;
+  var byId={}, list=[], fytdByMonth=[0,0,0,0,0,0,0,0,0,0,0,0], minDate=null, maxDate=null, warnings=[];
+  gifts.forEach(function(g){
+    if(cfg.solicitor&&g.solicitor!==cfg.solicitor) return;
+    var fy=fyOf(g.date,S); if(fy>T) return;
+    var d=byId[g.id];
+    if(!d){ d=byId[g.id]={id:g.id,name:'',solicitor:'',capacity:null,byFY:{},cntFY:{},monthSum:[0,0,0,0,0,0,0,0,0,0,0,0,0],monthFY:{},firstDate:null,lastDate:null,lastGiftAmt:0,largest:0}; list.push(d); }
+    if(!d.name&&g.name) d.name=g.name;
+    if(!d.solicitor&&g.solicitor) d.solicitor=g.solicitor;
+    if(g.capacity!=null&&(d.capacity==null||g.capacity>d.capacity)) d.capacity=g.capacity;
+    d.byFY[fy]=(d.byFY[fy]||0)+g.amount; if(g.amount>0) d.cntFY[fy]=(d.cntFY[fy]||0)+1;
+    if(!d.firstDate||g.date<d.firstDate) d.firstDate=g.date;
+    if(g.amount>0){ if(!d.lastDate||g.date>d.lastDate){d.lastDate=g.date;d.lastGiftAmt=g.amount;} else if(g.date.getTime()===d.lastDate.getTime()) d.lastGiftAmt+=g.amount; }
+    if(fy<T&&fy>=T-5&&g.amount>0){ if(g.amount>d.largest) d.largest=g.amount; var cm=g.date.getMonth()+1; d.monthSum[cm]+=g.amount; (d.monthFY[cm]=d.monthFY[cm]||{})[fy]=1; }
+    if(fy===T) fytdByMonth[fyIndex(g.date,S)]+=g.amount;
+    if(!minDate||g.date<minDate) minDate=g.date; if(!maxDate||g.date>maxDate) maxDate=g.date;
+  });
+
+  var tiers=cfg.tiers.slice().sort(function(a,b){return b.min-a.min;});
+  var donors=[];
+  list.forEach(function(d){
+    var lastFY=d.byFY[T-1]||0, prior=d.byFY[T-2]||0, fytd=d.byFY[T]||0, y;
+    var vals=[]; for(y=T-1;y>=T-L;y--) if((d.byFY[y]||0)>0) vals.push(d.byFY[y]);
+    var avg=vals.length?vals.reduce(function(a,b){return a+b;},0)/vals.length:0;
+    var highest=0, yearsGiven=0, recentOlder=null;
+    for(y=T-1;y>=T-5;y--){ var v=d.byFY[y]||0; if(v>highest) highest=v; if(v>0){ yearsGiven++; if(y<T-1&&recentOlder==null) recentOlder=y; } }
+    var fyKeys=Object.keys(d.byFY).map(Number);
+    var givenBeforeLast=fyKeys.some(function(k){return k<T-1&&d.byFY[k]>0;});
+    var givenBeforeT=fyKeys.some(function(k){return k<T&&d.byFY[k]>0;});
+    var seg=null;
+    if(lastFY>0){ if(!givenBeforeLast) seg='New'; else if(prior>0&&lastFY>=prior*1.10) seg='Growing'; else if(prior>0&&lastFY<prior*0.80) seg='Declining'; else seg='Steady'; }
+    else if(fytd>0) seg=givenBeforeT?'Steady':'New';
+    else if(prior>0) seg='Lapsed';
+    else if(recentOlder!=null) seg='Long lapsed';
+    if(!seg) return;
+
+    var base, basisTxt, upg=0, notes=[];
+    if(seg==='Lapsed'){ base=prior*cfg.react.Lapsed; basisTxt=Math.round(cfg.react.Lapsed*100)+'% of '+fyName(T-2,S,cfg.naming)+' giving'; }
+    else if(seg==='Long lapsed'){ base=(d.byFY[recentOlder]||0)*cfg.react['Long lapsed']; basisTxt=Math.round(cfg.react['Long lapsed']*100)+'% of '+fyName(recentOlder,S,cfg.naming)+' giving'; }
+    else {
+      if(lastFY===0&&fytd>0){ base=fytd; basisTxt='This year\'s giving to date'; }
+      else if(cfg.basis==='last'){ base=lastFY; basisTxt='Last year\'s total'; }
+      else if(cfg.basis==='avg'){ base=avg||lastFY; basisTxt=L+'-year average'; }
+      else if(cfg.basis==='highest'){ base=highest||lastFY; basisTxt='Best year in the last five'; }
+      else if(cfg.basis==='largest'){ base=d.largest||lastFY; basisTxt='Largest single gift'; }
+      else { base=Math.max(lastFY,avg); basisTxt=(lastFY>=avg?'Last year\'s total':L+'-year average'); }
+      upg=cfg.up[seg]||0;
+    }
+    var raw=base*(1+upg);
+    var capAsk=null;
+    if(cfg.useCapacity&&d.capacity){
+      capAsk=d.capacity*cfg.capacityPct;
+      if(raw>capAsk){ if(capAsk>=base){ raw=capAsk; notes.push('Held to the capacity guideline of '+money(capAsk)+'.'); } else notes.push('Giving already exceeds rated capacity; the screening may be out of date.'); }
+      else if(capAsk>=raw*2) notes.push('Capacity supports up to '+money(capAsk)+' a year; consider a stretch conversation.');
+    }
+    raw=Math.max(raw,cfg.minAsk);
+    var ask=roundAsk(raw,cfg.rounding,(upg>0)?base:0);
+    if(ask<cfg.minAsk) ask=cfg.minAsk;
+    var remaining=ask-fytd, status='Ask';
+    if(fytd>0&&remaining<cfg.minAsk){ remaining=0; status='Renewed'; }
+    if(seg==='Long lapsed'&&!cfg.includeLong){ status='Excluded'; remaining=0; notes.push('Not scheduled: long-lapsed asks are turned off.'); }
+    var askType={Growing:'Renewal with upgrade',Steady:'Renewal with upgrade',Declining:'Renewal',New:'Second gift with upgrade',Lapsed:'Reactivation','Long lapsed':'Re-engagement'}[seg];
+    if(status==='Ask'&&fytd>0) askType='Additional gift this year';
+    if(status==='Renewed') askType='Renewed this year, steward';
+    if(seg==='Steady'&&upg===0) askType='Renewal';
+    var ti=0; for(var t=0;t<tiers.length;t++){ if(ask>=tiers[t].min){ ti=t; break; } ti=t; }
+    var tier=tiers[ti];
+    var sustainer=(d.cntFY[T-1]||0)>=6||(d.cntFY[T-2]||0)>=6;
+    var peak=null, strength=null;
+    if(!sustainer){ var bm=0,bv=0; for(var cm=1;cm<=12;cm++) if(d.monthSum[cm]>bv){bv=d.monthSum[cm];bm=cm;}
+      if(bm){ var yrs=Object.keys(d.monthFY[bm]||{}).length; peak=bm; strength=(yrs>=2&&yrs/Math.max(1,yearsGiven)>=0.6)?'consistent':'occasional'; } }
+    var peakTxt=sustainer?'Gives through the year':(peak?(MON_FULL[peak-1]+(strength==='consistent'?'':' (sometimes)')):'');
+    if(sustainer) notes.push('Frequent giver: frame the ask as a monthly amount of about '+money(ask/12)+'.');
+    donors.push({id:d.id,name:d.name||('Donor '+d.id),solicitor:d.solicitor,capacity:d.capacity,seg:seg,tierIndex:ti,tier:tier.name,cultN:tier.cultivate,stewN:tier.steward,
+      prior:prior,lastFY:lastFY,avg:avg,largest:d.largest,lastDate:d.lastDate,lastGiftAmt:d.lastGiftAmt,fytd:fytd,base:base,basisTxt:basisTxt,upg:upg,
+      ask:ask,remaining:remaining,status:status,askType:askType,prob:(cfg.prob[seg]||0),peak:peak,strength:strength,peakTxt:peakTxt,sustainer:sustainer,
+      notes:notes,askIdx:null,acts:[],cells:['','','','','','','','','','','','']});
+  });
+
+  /* Scheduling */
+  var weights=months.map(function(mo,i){ if(i<planStart) return 0; var w=+cfg.monthWeights[mo.m-1]||0; if(w>0&&cfg.boostFYEnd&&i===11) w+=1; return w; });
+  var openMonths=weights.filter(function(w){return w>0;}).length;
+  var askers=donors.filter(function(d){return d.status==='Ask';}).sort(function(a,b){return b.ask-a.ask;});
+  if(askers.length&&!openMonths) warnings.push('Every month from the scheduling start has an emphasis of 0, so no asks could be placed. Raise at least one month above 0.');
+  var cap=cfg.maxAsks>0?cfg.maxAsks:Math.max(1,Math.ceil(askers.length/Math.max(1,openMonths)*1.5));
+  var load=[0,0,0,0,0,0,0,0,0,0,0,0];
+  askers.forEach(function(d){
+    var best=-1,bestS=-Infinity;
+    for(var i=planStart;i<12;i++){
+      if(weights[i]<=0) continue;
+      var s=weights[i];
+      if(cfg.honorMonth&&d.peak&&months[i].m===d.peak) s+=(d.strength==='consistent'?3:1.5);
+      var need=d.cultN*gap, room=i-planStart; if(room<need) s-=0.75*Math.ceil((need-room)/gap);
+      s-=load[i]/cap;
+      if(load[i]>=cap) s-=100;
+      if(s>bestS+1e-9){bestS=s;best=i;}
+    }
+    if(best<0){ d.notes.push('No open month was available for this ask.'); d.status='Unscheduled'; return; }
+    d.askIdx=best; load[best]++;
+    if(cfg.honorMonth&&d.peak&&months[best].m===d.peak) d.notes.unshift('Ask placed in the donor\'s usual giving month.');
+    // cultivation
+    var labels=cultLabels(d.tierIndex,d.cultN), placed=0;
+    for(var k=0;k<d.cultN;k++){ var idx=best-gap*(d.cultN-k); if(idx>=planStart){ d.acts.push({idx:idx,type:'Cultivate',label:labels[k]}); placed++; } }
+    if(placed<d.cultN) d.notes.push('Shortened cycle: '+placed+' of '+d.cultN+' cultivation touches fit before the ask.');
+    d.acts.push({idx:best,type:'Ask',label:money(d.remaining)+', '+d.askType.toLowerCase()+'. Thank the donor within 48 hours of the gift.',amount:d.remaining});
+    var sl=stewLabels(d.tierIndex,d.stewN), spill=0;
+    for(k=1;k<=d.stewN;k++){ var si=best+gap*k; if(si<=11) d.acts.push({idx:si,type:'Steward',label:sl[k-1]}); else spill++; }
+    if(spill) d.notes.push(spill+' stewardship touch'+(spill>1?'es carry':' carries')+' into next fiscal year.');
+  });
+  donors.forEach(function(d){
+    if(d.status!=='Renewed') return;
+    var sl=stewLabels(d.tierIndex,d.stewN);
+    for(var k=0;k<d.stewN;k++){ var si=planStart+gap*k; if(si<=11) d.acts.push({idx:si,type:'Steward',label:sl[k]}); }
+    d.notes.push('Already gave '+money(d.fytd)+' this year, which meets the recommended ask. Focus on stewardship.');
+  });
+  donors.forEach(function(d){
+    d.acts.sort(function(a,b){return a.idx-b.idx;});
+    d.acts.forEach(function(a){ var txt=a.type==='Ask'?('Ask '+money(a.amount)):(a.type+': '+a.label); d.cells[a.idx]=d.cells[a.idx]?d.cells[a.idx]+' / '+txt:txt; });
+    d.weighted=d.remaining*d.prob;
+    d.askMonth=d.askIdx!=null?months[d.askIdx].label:'';
+    d.nCult=d.acts.filter(function(a){return a.type==='Cultivate';}).length;
+    d.nStew=d.acts.filter(function(a){return a.type==='Steward';}).length;
+  });
+  donors.sort(function(a,b){ return (b.remaining-a.remaining)||(b.ask-a.ask)||String(a.name).localeCompare(String(b.name)); });
+
+  var todayIdx=(fyOf(today,S)===T)?fyIndex(today,S):-1;
+  var monthly=months.map(function(mo,i){
+    var r={idx:i,label:mo.label,full:mo.full,status:i<planStart?'Complete':(i===todayIdx?'Current':'Planned'),cult:0,asks:0,askSum:0,weighted:0,steward:0,actual:fytdByMonth[i],names:[]};
+    donors.forEach(function(d){ d.acts.forEach(function(a){ if(a.idx!==i) return; if(a.type==='Cultivate') r.cult++; else if(a.type==='Steward') r.steward++; else { r.asks++; r.askSum+=d.remaining; r.weighted+=d.weighted; r.names.push(d); } }); });
+    r.names.sort(function(a,b){return b.remaining-a.remaining;});
+    return r;
+  });
+  var tot={donors:donors.length,asks:askers.filter(function(d){return d.askIdx!=null;}).length,askSum:0,weighted:0,fytd:fytdByMonth.reduce(function(a,b){return a+b;},0),renewed:donors.filter(function(d){return d.status==='Renewed';}).length};
+  donors.forEach(function(d){ tot.askSum+=d.remaining; tot.weighted+=d.weighted; });
+  tot.projected=tot.fytd+tot.weighted;
+
+  var fullYears=minDate?(T-fyOf(minDate,S)-(minDate>fyStartDate(fyOf(minDate,S),S)?1:0)):0;
+  if(minDate&&minDate.getTime()===fyStartDate(fyOf(minDate,S),S).getTime()) fullYears=T-fyOf(minDate,S);
+  if(fullYears<3) warnings.push('The file covers about '+Math.max(0,fullYears)+' complete fiscal year'+(fullYears===1?'':'s')+' before '+fyName(T,S,cfg.naming)+'. Three or more gives more reliable trends and giving months.');
+  if(maxDate&&maxDate>today) warnings.push('Some gift dates are later than today. Check the date column mapping.');
+  return {cfg:cfg,T:T,S:S,fyLabel:fyName(T,S,cfg.naming),prevLabel:fyName(T-1,S,cfg.naming),prev2Label:fyName(T-2,S,cfg.naming),months:months,planStart:planStart,
+    donors:donors,monthly:monthly,totals:tot,warnings:warnings,minDate:minDate,maxDate:maxDate,fullYears:fullYears,askCap:cap,generated:today};
+}
+
+/* ---------- Excel ---------- */
+function colL(n){ var s=''; n++; while(n>0){ var r=(n-1)%26; s=String.fromCharCode(65+r)+s; n=Math.floor((n-1)/26); } return s; }
+function buildWorkbook(plan){
+  var X=ExcelJS, wb=new X.Workbook(), cfg=plan.cfg;
+  wb.creator='Solicitation Cycle Planner, marquez.pro'; wb.created=new Date(); wb.calcProperties.fullCalcOnLoad=true;
+  var C={ever:'FF0E1729',deep:'FF0E1729',berry:'FF8C2F39',evSoft:'FFE7E2D3',gold:'FFD6A34C',goldSoft:'FFF3E3C0',cult:'FFE1E5EE',stew:'FFF0DDE0',grey:'FFF2EFE6',line:'FFD9D3C2',muted:'FF6C7690',white:'FFFFFFFF'};
+  var USD='"$"#,##0', PCT='0%', FONT='Calibri';
+  function fill(c){return {type:'pattern',pattern:'solid',fgColor:{argb:c}};}
+  var thin={style:'thin',color:{argb:C.line}};
+  function header(ws,rowNum,labels){ var row=ws.getRow(rowNum); labels.forEach(function(l,i){ var c=row.getCell(i+1); c.value=l; c.font={name:FONT,bold:true,color:{argb:C.white},size:11}; c.fill=fill(C.ever); c.alignment={vertical:'middle',wrapText:true}; c.border={bottom:thin}; }); row.height=32; }
+  function title(ws,text,sub,sub2){ ws.getCell('A1').value=text; ws.getCell('A1').font={name:FONT,size:18,bold:true,color:{argb:C.deep}}; ws.getRow(1).height=28;
+    if(sub){ ws.getCell('A2').value=sub; ws.getCell('A2').font={name:FONT,size:11,color:{argb:C.muted}}; }
+    if(sub2){ ws.getCell('A3').value=sub2; ws.getCell('A3').font={name:FONT,size:11,color:{argb:C.muted}}; } }
+  var gen=plan.generated, genTxt=MON_FULL[gen.getMonth()]+' '+gen.getDate()+', '+gen.getFullYear();
+  var ms=plan.months, fyRange=ms[0].full+' to '+ms[11].full;
+  var who=[cfg.planName,cfg.solicitor].filter(Boolean).join(', ');
+  var subLine=(who?who+'. ':'')+'Fiscal year '+fyRange+'.';
+  var genLine='Generated '+genTxt+' with the marquez.pro Solicitation Cycle Planner.';
+
+  var wsS=wb.addWorksheet('Summary',{views:[{showGridLines:false}]});
+  var wsM=wb.addWorksheet('Monthly Plan',{views:[{state:'frozen',ySplit:4,showGridLines:false}]});
+  var wsT=wb.addWorksheet('Monthly To-Do',{views:[{state:'frozen',ySplit:4}]});
+  var wsC=wb.addWorksheet('Cycle Calendar',{views:[{state:'frozen',xSplit:2,ySplit:4}]});
+  var wsD=wb.addWorksheet('Donor Plan',{views:[{state:'frozen',xSplit:2,ySplit:1}]});
+  var wsA=wb.addWorksheet('Assumptions',{views:[{showGridLines:false}]});
+
+  /* Donor Plan */
+  var D=plan.donors, N=Math.max(D.length,1), last=N+1;
+  var cols=[['Donor ID','id',13],['Name','name',30],['Solicitor','solicitor',16],['Segment','seg',12],['Tier','tier',13],['Ask type','askType',26],
+    [plan.prev2Label+' giving','prior',14,USD],[plan.prevLabel+' giving','lastFY',14,USD],[cfg.lookback+'-year average','avg',14,USD],['Largest gift, 5 years','largest',14,USD],
+    ['Last gift date','lastDate',13,'mm/dd/yyyy'],['Usual giving month','peakTxt',20],['Rated capacity','capacity',14,USD],[plan.fyLabel+' to date','fytd',14,USD],
+    ['Recommended '+plan.fyLabel+' ask','ask',16,USD],['Remaining to ask','remaining',15,USD],['Likelihood','prob',11,PCT],['Weighted projection','weighted',15,USD],
+    ['Ask month','askMonth',12],['Ask basis','basisTxt',30],['Cultivation touches','nCult',12],['Stewardship touches','nStew',12],['Notes','notesTxt',70]];
+  var CI={}; cols.forEach(function(c,i){CI[c[1]]=colL(i);});
+  header(wsD,1,cols.map(function(c){return c[0];}));
+  cols.forEach(function(c,i){ wsD.getColumn(i+1).width=c[2]; if(c[3]) wsD.getColumn(i+1).numFmt=c[3]; });
+  D.forEach(function(d,k){
+    var r=k+2, row=wsD.getRow(r);
+    cols.forEach(function(c,i){
+      var key=c[1], v;
+      if(key==='notesTxt') v=d.notes.join(' ');
+      else if(key==='remaining') v=(d.status==='Ask'||d.status==='Unscheduled')?{formula:'MAX(0,'+CI.ask+r+'-'+CI.fytd+r+')',result:Math.max(0,d.ask-d.fytd)}:0;
+      else if(key==='weighted') v={formula:CI.remaining+r+'*'+CI.prob+r,result:d.weighted};
+      else if(key==='askMonth') v=d.askMonth||null;
+      else if(key==='capacity') v=d.capacity==null?null:d.capacity;
+      else if(key==='avg') v=Math.round(d.avg);
+      else v=d[key];
+      if(v===''||v===undefined) v=null;
+      row.getCell(i+1).value=v;
+    });
+    row.getCell(cols.length).alignment={wrapText:false};
+    if(d.askIdx!=null){ row.getCell(15).fill=fill(C.goldSoft); row.getCell(16).fill=fill(C.goldSoft); }
+  });
+  wsD.autoFilter={from:'A1',to:colL(cols.length-1)+'1'};
+  var rng=function(k){return "'Donor Plan'!$"+CI[k]+"$2:$"+CI[k]+"$"+last;};
+
+  /* Cycle Calendar */
+  title(wsC,'Cycle Calendar, '+plan.fyLabel,subLine,'Each row is one donor\'s path through the year. Gold is the ask, blue is cultivation, green is stewardship.');
+  var calHead=['Donor ID','Name','Tier','Ask'].concat(ms.map(function(m){return m.label;}));
+  header(wsC,4,calHead);
+  [13,28,13,13].forEach(function(w,i){wsC.getColumn(i+1).width=w;}); for(var mi=0;mi<12;mi++) wsC.getColumn(5+mi).width=24;
+  wsC.getColumn(4).numFmt=USD;
+  var CD=D.filter(function(d){return d.acts.length;});
+  CD.sort(function(a,b){ return (a.askIdx==null?99:a.askIdx)-(b.askIdx==null?99:b.askIdx)||b.remaining-a.remaining; });
+  CD.forEach(function(d,k){
+    var r=5+k, row=wsC.getRow(r);
+    row.getCell(1).value=d.id; row.getCell(2).value=d.name; row.getCell(3).value=d.tier; row.getCell(4).value=d.remaining||null;
+    d.cells.forEach(function(txt,i){ var c=row.getCell(5+i); if(!txt) return; c.value=txt; c.alignment={wrapText:true,vertical:'top'};
+      c.fill=fill(/^Ask/.test(txt)?C.goldSoft:(/^Cultivate/.test(txt)?C.cult:C.stew)); if(/^Ask/.test(txt)) c.font={name:FONT,bold:true}; c.border={top:thin,bottom:thin,left:thin,right:thin}; });
+  });
+  for(mi=0;mi<plan.planStart;mi++){ wsC.getRow(4).getCell(5+mi).fill=fill(C.muted); }
+  var calLast=Math.max(5,4+CD.length);
+
+  /* Monthly Plan */
+  title(wsM,'Monthly Plan, '+plan.fyLabel,subLine,genLine);
+  var mh=['Month','Status','Cultivation touches','Asks','Ask amount','Weighted projection','Received so far','Cumulative (received + projected)','Goal pace','Stewardship touches','Largest asks this month'];
+  header(wsM,4,mh);
+  [14,11,13,9,14,14,14,17,13,13,70].forEach(function(w,i){wsM.getColumn(i+1).width=w;});
+  plan.monthly.forEach(function(m,i){
+    var r=5+i, row=wsM.getRow(r), cl=colL(4+i);
+    row.getCell(1).value=m.label; row.getCell(2).value=m.status;
+    row.getCell(3).value={formula:'COUNTIF(\'Cycle Calendar\'!'+cl+'$5:'+cl+'$'+calLast+',"Cultivate*")',result:m.cult};
+    row.getCell(4).value={formula:'SUMPRODUCT(--('+rng('askMonth')+'=$A'+r+'))',result:m.asks};
+    row.getCell(5).value={formula:'SUMPRODUCT(('+rng('askMonth')+'=$A'+r+')*'+rng('remaining')+')',result:m.askSum};
+    row.getCell(6).value={formula:'SUMPRODUCT(('+rng('askMonth')+'=$A'+r+')*'+rng('weighted')+')',result:m.weighted};
+    row.getCell(7).value=m.actual||0;
+    row.getCell(8).value={formula:(i===0?'':'H'+(r-1)+'+')+'G'+r+'+F'+r,result:0};
+    row.getCell(9).value=cfg.goal>0?Math.round(cfg.goal*(i+1)/12):null;
+    row.getCell(10).value={formula:'COUNTIF(\'Cycle Calendar\'!'+cl+'$5:'+cl+'$'+calLast+',"Steward*")',result:m.steward};
+    row.getCell(11).value=m.names.slice(0,4).map(function(d){return d.name+' '+money(d.remaining);}).join('; ')+(m.names.length>4?'; plus '+(m.names.length-4)+' more':'');
+    [5,6,7,8,9].forEach(function(c){row.getCell(c).numFmt=USD;});
+    if(m.status==='Complete') row.eachCell(function(c){c.font={name:FONT,color:{argb:C.muted}};});
+    if(m.asks) row.getCell(5).fill=fill(C.goldSoft);
+    row.eachCell({includeEmpty:true},function(c){c.border={bottom:thin};});
+  });
+  var cum=0; plan.monthly.forEach(function(m,i){ cum+=m.actual+m.weighted; wsM.getRow(5+i).getCell(8).value={formula:wsM.getRow(5+i).getCell(8).value.formula,result:cum}; });
+  var tr=wsM.getRow(17); tr.getCell(1).value='Total';
+  [3,4,5,6,7,10].forEach(function(c){ var L2=colL(c-1); tr.getCell(c).value={formula:'SUM('+L2+'5:'+L2+'16)'}; });
+  [5,6,7].forEach(function(c){tr.getCell(c).numFmt=USD;});
+  tr.eachCell({includeEmpty:true},function(c){c.font={name:FONT,bold:true}; c.fill=fill(C.evSoft);});
+
+  /* Monthly To-Do */
+  title(wsT,'Monthly To-Do, '+plan.fyLabel,subLine,'Every planned touch and ask, month by month. Filter by month or action to build your calendar.');
+  header(wsT,4,['Month','Action','Donor','Donor ID','Tier','Activity','Ask amount','Likelihood']);
+  [13,11,30,13,13,70,14,11].forEach(function(w,i){wsT.getColumn(i+1).width=w;});
+  var todo=[]; D.forEach(function(d){ d.acts.forEach(function(a){ todo.push({a:a,d:d}); }); });
+  var ord={Cultivate:0,Ask:1,Steward:2};
+  todo.sort(function(x,y){ return x.a.idx-y.a.idx||ord[x.a.type]-ord[y.a.type]||(y.d.remaining-x.d.remaining); });
+  todo.forEach(function(t,k){ var row=wsT.getRow(5+k);
+    row.values=[ms[t.a.idx].label,t.a.type,t.d.name,t.d.id,t.d.tier,t.a.label,t.a.type==='Ask'?t.a.amount:null,t.a.type==='Ask'?t.d.prob:null];
+    row.getCell(7).numFmt=USD; row.getCell(8).numFmt=PCT;
+    row.getCell(2).fill=fill(t.a.type==='Ask'?C.goldSoft:(t.a.type==='Cultivate'?C.cult:C.stew));
+    if(k>0&&todo[k-1].a.idx!==t.a.idx) row.eachCell({includeEmpty:true},function(c){c.border={top:{style:'thin',color:{argb:C.muted}}};});
+  });
+  wsT.autoFilter={from:'A4',to:'H4'};
+
+  /* Summary */
+  title(wsS,'Solicitation Plan, '+plan.fyLabel,subLine,genLine);
+  wsS.getColumn(1).width=38; [2,3,4,5].forEach(function(c){wsS.getColumn(c).width=17;});
+  function sec(r,t){ var c=wsS.getCell('A'+r); c.value=t; c.font={name:FONT,size:13,bold:true,color:{argb:C.berry}}; wsS.getRow(r).height=22; }
+  sec(5,'Key figures');
+  var kf=[['Donors analyzed',D.length,null],
+    ['Asks scheduled this year',{formula:'COUNTA('+rng('askMonth')+')',result:plan.totals.asks},null],
+    ['Total remaining to ask',{formula:'SUM('+rng('remaining')+')',result:plan.totals.askSum},USD],
+    ['Weighted projection from asks',{formula:'SUM('+rng('weighted')+')',result:plan.totals.weighted},USD],
+    ['Received so far this fiscal year',{formula:"'Monthly Plan'!G17",result:plan.totals.fytd},USD],
+    ['Projected fiscal-year total',{formula:'B9+B10',result:plan.totals.projected},USD],
+    ['Portfolio goal',cfg.goal>0?cfg.goal:'Not set',USD],
+    ['Gap to goal (positive means short)',cfg.goal>0?{formula:'B12-B11',result:cfg.goal-plan.totals.projected}:null,USD]];
+  kf.forEach(function(k,i){ var r=6+i; wsS.getCell('A'+r).value=k[0]; var c=wsS.getCell('B'+r); c.value=k[1]; if(k[2]) c.numFmt=k[2]; c.font={name:FONT,bold:true}; c.alignment={horizontal:'right'};
+    wsS.getRow(r).eachCell({includeEmpty:true},function(x){x.border={bottom:thin};}); });
+  wsS.getCell('B11').fill=fill(C.goldSoft);
+  function breakdown(r0,t,names,colKey){
+    sec(r0,t); var hr=r0+1; ['','Donors','Asks scheduled','Remaining to ask','Weighted projection'].forEach(function(h,i){ var c=wsS.getRow(hr).getCell(i+1); c.value=h||(colKey==='tier'?'Tier':'Segment'); c.font={name:FONT,bold:true,color:{argb:C.white}}; c.fill=fill(C.ever); });
+    names.forEach(function(n,i){ var r=hr+1+i, row=wsS.getRow(r); var cr=rng(colKey);
+      var ds=D.filter(function(d){return d[colKey]===n;});
+      row.getCell(1).value=n;
+      row.getCell(2).value={formula:'COUNTIF('+cr+',$A'+r+')',result:ds.length};
+      row.getCell(3).value={formula:'COUNTIFS('+cr+',$A'+r+','+rng('askMonth')+',"<>")',result:ds.filter(function(d){return d.askIdx!=null;}).length};
+      row.getCell(4).value={formula:'SUMIF('+cr+',$A'+r+','+rng('remaining')+')',result:ds.reduce(function(a,d){return a+d.remaining;},0)}; row.getCell(4).numFmt=USD;
+      row.getCell(5).value={formula:'SUMIF('+cr+',$A'+r+','+rng('weighted')+')',result:ds.reduce(function(a,d){return a+d.weighted;},0)}; row.getCell(5).numFmt=USD;
+      row.eachCell({includeEmpty:true},function(x){x.border={bottom:thin};});
+    });
+    return hr+names.length+2;
+  }
+  var nr=breakdown(15,'By tier',cfg.tiers.slice().sort(function(a,b){return b.min-a.min;}).map(function(t){return t.name;}),'tier');
+  nr=breakdown(nr,'By giving pattern',SEGMENTS,'seg');
+  sec(nr,'Largest asks'); nr++;
+  ['Donor','Tier','Remaining to ask','Ask month','Segment'].forEach(function(h,i){ var c=wsS.getRow(nr).getCell(i+1); c.value=h; c.font={name:FONT,bold:true,color:{argb:C.white}}; c.fill=fill(C.ever); });
+  D.filter(function(d){return d.askIdx!=null;}).slice(0,10).forEach(function(d,i){ var row=wsS.getRow(nr+1+i); row.values=[d.name,d.tier,d.remaining,d.askMonth,d.seg]; row.getCell(3).numFmt=USD; row.eachCell({includeEmpty:true},function(x){x.border={bottom:thin};}); });
+  nr+=12;
+  if(plan.warnings.length){ sec(nr,'Data notes'); plan.warnings.forEach(function(w,i){ var c=wsS.getCell('A'+(nr+1+i)); c.value=w; c.font={name:FONT,color:{argb:'FF8A4B12'}}; }); }
+
+  /* Assumptions */
+  title(wsA,'Assumptions and method',subLine,genLine);
+  wsA.getColumn(1).width=44; wsA.getColumn(2).width=90;
+  var basisNames={greater:'Higher of last year\'s total or the '+cfg.lookback+'-year average',last:'Last fiscal year\'s total',avg:cfg.lookback+'-year average',highest:'Best fiscal year in the last five',largest:'Largest single gift in the last five years'};
+  var roundNames={smart:'Nearest clean amount, always an upgrade',up:'Next clean amount up',none:'Exact dollars'};
+  var pct=function(x){return Math.round(x*100)+'%';};
+  var A=[['Fiscal year',plan.fyLabel+', '+fyRange],['Scheduling starts',ms[plan.planStart].full],['Gift officer',cfg.solicitor||'Everyone in the file'],
+    ['Data used',(plan.minDate?('Gifts dated '+plan.minDate.toLocaleDateString('en-US')+' to '+plan.maxDate.toLocaleDateString('en-US')):'None')],
+    ['Ask starts from',basisNames[cfg.basis]],['Upgrade, growing donors',pct(cfg.up.Growing)],['Upgrade, steady donors',pct(cfg.up.Steady)],['Upgrade, declining donors',pct(cfg.up.Declining)],['Upgrade, new donors',pct(cfg.up.New)],
+    ['Lapsed donors, ask for',pct(cfg.react.Lapsed)+' of their last annual total'],['Long-lapsed donors, ask for',pct(cfg.react['Long lapsed'])+' of their last annual total'+(cfg.includeLong?'':' (not scheduled)')],
+    ['Minimum ask',money(cfg.minAsk)],['Rounding',roundNames[cfg.rounding]],['Capacity',cfg.useCapacity?('Annual ask ceiling of '+pct(cfg.capacityPct)+' of rated capacity, never below current giving'):'Not used'],
+    ['Months between touches',String(cfg.gap)],['Most asks in one month',String(plan.askCap)+(cfg.maxAsks>0?'':' (automatic)')],
+    ['Month emphasis',ms.map(function(m){return MON[m.m-1]+' '+cfg.monthWeights[m.m-1];}).join(', ')+(cfg.boostFYEnd?'; final month of the fiscal year gets +1':'')],
+    ['Usual giving month',cfg.honorMonth?'Asks lean toward each donor\'s historical giving month':'Not used'],
+    ['Likelihood by pattern',SEGMENTS.map(function(s){return s+' '+pct(cfg.prob[s]);}).join(', ')],
+    ['Portfolio goal',cfg.goal>0?money(cfg.goal):'Not set']];
+  cfg.tiers.slice().sort(function(a,b){return b.min-a.min;}).forEach(function(t){ A.push(['Tier: '+t.name,'Asks of '+money(t.min)+' or more; '+t.cultivate+' cultivation touches before, '+t.steward+' stewardship touches after']); });
+  A.forEach(function(a,i){ var r=5+i; wsA.getCell('A'+r).value=a[0]; wsA.getCell('A'+r).font={name:FONT,bold:true}; wsA.getCell('B'+r).value=a[1]; wsA.getCell('B'+r).alignment={wrapText:true,vertical:'top'}; wsA.getRow(r).eachCell({includeEmpty:true},function(x){x.border={bottom:thin};}); });
+  var r2=6+A.length; var mh2=wsA.getCell('A'+r2); mh2.value='How the plan is built'; mh2.font={name:FONT,size:13,bold:true,color:{argb:C.berry}};
+  ['Giving patterns: Growing gave at least 10% more last fiscal year than the year before. Declining gave at least 20% less. New made a first gift last year or this year. Lapsed gave two fiscal years ago but not last year. Long lapsed last gave three to five fiscal years ago. Everyone else who gave last year is Steady.',
+   'Ask amount: the starting figure above, raised by the upgrade for the donor\'s pattern, held to the capacity ceiling when a rating is present, raised to the minimum ask, and rounded to a clean amount. Gifts already received this fiscal year are subtracted to give the remaining ask.',
+   'Ask month: the planner scores every open month by its emphasis, adds weight to the donor\'s usual giving month, allows room for cultivation, and balances the workload so no month gets more than the ask limit. The largest asks are placed first.',
+   'Cultivation touches are scheduled in the months before the ask, ending with a pre-ask conversation. Stewardship starts the month after the gift. Donors who have already met their ask this year receive stewardship only.',
+   'Weighted projection is the remaining ask multiplied by the likelihood for the donor\'s giving pattern. Every total in this workbook is a formula, so editing an ask, likelihood, or ask month in Donor Plan updates the Summary and Monthly Plan.'
+  ].forEach(function(t,i){ var c=wsA.getCell('A'+(r2+1+i)); wsA.mergeCells('A'+(r2+1+i)+':B'+(r2+1+i)); c.value=t; c.alignment={wrapText:true,vertical:'top'}; wsA.getRow(r2+1+i).height=48; });
+  return wb;
+}
+
+/* ---------- Sample data ---------- */
+function sampleRows(S,today){
+  var seed=20260; function rnd(){ seed=(seed*16807)%2147483647; return (seed-1)/2147483646; }
+  function pick(a){return a[Math.floor(rnd()*a.length)];}
+  var T=fyOf(today,S), rows=[];
+  var first=['Maria','James','Patricia','Robert','Linda','Michael','Carmen','David','Elizabeth','Joseph','Teresa','Thomas','Rosa','Daniel','Margaret','Anthony','Ana','Paul','Catherine','Francis','Lucia','Peter','Monica','John','Beatrice','Miguel','Helen','Vincent','Clare','Dominic'];
+  var lastN=['Alvarez','Brennan','Castillo','Donnelly','Esposito','Flanagan','Garcia','Hughes','Iglesias','Kowalski','Lopez','McCarthy','Nguyen','OBrien','Pereira','Quinn','Rossi','Sullivan','Torres','Walsh','Reyes','Murphy','Santos','Kelly','Morales'];
+  var officers=['A. Rivera','J. Collins'];
+  var bases=[250,500,1000,1500,2500,5000,10000,15000,25000,50000], bw=[10,14,18,12,14,12,9,5,4,2];
+  function wpick(){ var s=bw.reduce(function(a,b){return a+b;},0), x=rnd()*s; for(var i=0;i<bases.length;i++){ x-=bw[i]; if(x<=0) return bases[i]; } return bases[0]; }
+  var monthPool=[12,12,12,11,11,10,6,5,3,9,4,1,2,7,8];
+  var todayIdx=fyIndex(today,S);
+  for(var i=0;i<130;i++){
+    var id='C'+(10231+i*17), fn=pick(first), ln=pick(lastN).replace('OBrien','O\'Brien');
+    var name=(rnd()<0.12)?(ln+' Family Foundation'):(fn+' '+ln);
+    var r=rnd(), arch=r<0.34?'steady':r<0.5?'growing':r<0.6?'declining':r<0.72?'lapsed':r<0.8?'long':r<0.9?'new':'sustainer';
+    var base=wpick(), pm=pick(monthPool), officer=officers[i%2];
+    var cap=(rnd()<0.65)?base*pick([3,5,8,12,20,40]):null;
+    var capTxt=cap?('$'+Math.round(cap).toLocaleString('en-US')+' - $'+Math.round(cap*2-1).toLocaleString('en-US')):'';
+    var years=[];
+    for(var y=T-5;y<=T;y++){
+      var off=T-y, amt=0;
+      if(arch==='steady') amt=base*(0.95+rnd()*0.1);
+      else if(arch==='growing') amt=base*Math.pow(1.18,5-off)/2.2;
+      else if(arch==='declining') amt=base*(off>=2?1:0.55);
+      else if(arch==='lapsed') amt=off>=2?base:0;
+      else if(arch==='long') amt=off>=3?base:0;
+      else if(arch==='new') amt=off<=1?base:0;
+      else amt=base;
+      if(rnd()<0.08&&arch==='steady') amt=0;
+      years.push([y,amt]);
+    }
+    years.forEach(function(ya){
+      var y=ya[0], amt=ya[1]; if(amt<=0) return;
+      var ms=fyMonths(y,S);
+      function add(mIdx,a){ var mo=ms[mIdx]; var dd=new Date(mo.y,mo.m-1,1+Math.floor(rnd()*27)); if(y===T&&(mIdx>todayIdx||dd>today)) return;
+        rows.push({'Constituent ID':id,'Name':name,'Gift Date':(dd.getMonth()+1)+'/'+dd.getDate()+'/'+dd.getFullYear(),'Gift Amount':Math.max(10,Math.round(a/5)*5),'Gift Type':'Cash','Estimated Capacity':capTxt,'Assigned Solicitor':officer}); }
+      if(arch==='sustainer'){ var mo=Math.max(10,Math.round(amt/12/5)*5); for(var k=0;k<12;k++) add(k,mo); return; }
+      var pIdx=(pm-S+12)%12;
+      if(rnd()<0.8) add(pIdx,amt); else add(Math.floor(rnd()*12),amt);
+      if(rnd()<0.18) add(Math.floor(rnd()*12),amt*0.25);
+    });
+  }
+  return rows;
+}
+
+return {MON:MON,MON_FULL:MON_FULL,SEGMENTS:SEGMENTS,fyOf:fyOf,fyMonths:fyMonths,fyName:fyName,fyIndex:fyIndex,fyStartDate:fyStartDate,
+  detectColumns:detectColumns,parseDate:parseDate,parseAmount:parseAmount,parseCapacity:parseCapacity,toGifts:toGifts,roundAsk:roundAsk,
+  buildPlan:buildPlan,buildWorkbook:buildWorkbook,sampleRows:sampleRows,money:money};
+})();
+if(typeof module!=='undefined') module.exports=Engine;
+</script>
+
+<script>
+(function(){
+'use strict';
+var E=Engine, $=function(id){return document.getElementById(id);};
+var TODAY=new Date();
+var state={rows:null,headers:[],map:{},gifts:null,plan:null,fileName:''};
+var STORE='mp-solicitation-planner-v1';
+var DEF={fyStart:7,fyNaming:'end',basis:'greater',lookback:3,minAsk:250,rounding:'smart',upGrowing:20,upSteady:10,upDeclining:0,upNew:25,reLapsed:100,reLong:75,
+  useCap:true,capPct:20,gap:1,honorMonth:true,boostEnd:true,maxAsks:0,pGrowing:85,pSteady:80,pDeclining:60,pNew:50,pLapsed:35,pLong:15,goal:'',includeLong:true,planName:'',
+  tiers:[{name:'Leadership',min:25000,cultivate:4,steward:4},{name:'Major',min:10000,cultivate:3,steward:3},{name:'Mid-level',min:1000,cultivate:2,steward:2},{name:'Annual',min:0,cultivate:1,steward:1}],
+  weights:{1:1,2:1,3:1,4:1,5:1,6:1,7:0.5,8:0.5,9:1,10:1.5,11:2,12:3}};
+var SIMPLE=['fyNaming','basis','lookback','minAsk','rounding','upGrowing','upSteady','upDeclining','upNew','reLapsed','reLong','useCap','capPct','gap','honorMonth','boostEnd','maxAsks','pGrowing','pSteady','pDeclining','pNew','pLapsed','pLong','goal','includeLong','planName'];
+
+function load(){ try{ var s=localStorage.getItem(STORE); if(s) return Object.assign(JSON.parse(JSON.stringify(DEF)),JSON.parse(s)); }catch(e){} return JSON.parse(JSON.stringify(DEF)); }
+function save(){ try{ localStorage.setItem(STORE,JSON.stringify(readForm())); }catch(e){} }
+
+function setVal(id,v){ var el=$(id); if(!el) return; if(el.type==='checkbox') el.checked=!!v; else el.value=v; }
+function getVal(id){ var el=$(id); if(el.type==='checkbox') return el.checked; return el.value; }
+
+function applyForm(s){
+  var fs=$('fyStart'); fs.innerHTML=E.MON_FULL.map(function(m,i){return '<option value="'+(i+1)+'">'+m+'</option>';}).join(''); fs.value=s.fyStart;
+  SIMPLE.forEach(function(k){ setVal(k,s[k]); });
+  $('tierBody').innerHTML=s.tiers.map(function(t,i){ return '<tr><td><input type="text" data-t="name" data-i="'+i+'" value="'+esc(t.name)+'" aria-label="Tier '+(i+1)+' name"></td>'+
+    '<td><span class="usd"><input type="number" min="0" step="500" data-t="min" data-i="'+i+'" value="'+t.min+'" aria-label="Tier '+(i+1)+' minimum ask"'+(i===3?' disabled':'')+'></span></td>'+
+    '<td><input type="number" min="0" max="6" step="1" data-t="cultivate" data-i="'+i+'" value="'+t.cultivate+'" aria-label="Tier '+(i+1)+' cultivation touches"></td>'+
+    '<td><input type="number" min="0" max="6" step="1" data-t="steward" data-i="'+i+'" value="'+t.steward+'" aria-label="Tier '+(i+1)+' stewardship touches"></td></tr>'; }).join('');
+  state.weights=Object.assign({},s.weights);
+  refreshCalendar();
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+function readForm(){
+  var s={fyStart:+$('fyStart').value}; SIMPLE.forEach(function(k){ s[k]=getVal(k); });
+  s.tiers=[0,1,2,3].map(function(i){ var q=function(f){return document.querySelector('[data-t="'+f+'"][data-i="'+i+'"]').value;}; return {name:q('name').trim()||('Tier '+(i+1)),min:i===3?0:Math.max(0,+q('min')||0),cultivate:Math.max(0,Math.min(6,+q('cultivate')||0)),steward:Math.max(0,Math.min(6,+q('steward')||0))}; });
+  s.weights={}; document.querySelectorAll('#weights input').forEach(function(inp){ s.weights[inp.dataset.m]=Math.max(0,Math.min(3,+inp.value||0)); });
+  s.targetFY=+$('targetFY').value; s.planStart=+$('planStart').value; s.solicitor=$('solicitor').value;
+  return s;
+}
+
+function refreshCalendar(){
+  var S=+$('fyStart').value, naming=$('fyNaming').value, T0=E.fyOf(TODAY,S);
+  var prevSel=$('targetFY').selectedIndex>0?1:0;
+  $('targetFY').innerHTML=[T0,T0+1].map(function(t){ var ms=E.fyMonths(t,S); return '<option value="'+t+'">'+E.fyName(t,S,naming)+' ('+E.MON[ms[0].m-1]+' '+ms[0].y+' to '+E.MON[ms[11].m-1]+' '+ms[11].y+')'+(t===T0?', current':'')+'</option>'; }).join('');
+  $('targetFY').selectedIndex=prevSel;
+  refreshPlanStart();
+  var ms=E.fyMonths(T0,S);
+  var w=state.weights||DEF.weights;
+  var cur={}; document.querySelectorAll('#weights input').forEach(function(inp){cur[inp.dataset.m]=inp.value;});
+  $('weights').innerHTML=ms.map(function(m){ var v=cur[m.m]!=null?cur[m.m]:w[m.m]; return '<label>'+E.MON[m.m-1]+'<input type="number" min="0" max="3" step="0.5" data-m="'+m.m+'" value="'+v+'"></label>'; }).join('');
+  // Data range guidance
+  var start=E.fyStartDate(T0-5,S), sTxt=E.MON_FULL[start.getMonth()]+' 1, '+start.getFullYear();
+  document.querySelectorAll('.js-start').forEach(function(el){el.textContent=sTxt;});
+  var todayTxt=E.MON_FULL[TODAY.getMonth()]+' '+TODAY.getDate()+', '+TODAY.getFullYear();
+  $('rangeCallout').innerHTML='<strong>For a fiscal year starting in '+E.MON_FULL[S-1]+':</strong> pull gifts dated '+sTxt+' through '+todayTxt+'. That covers five full fiscal years plus '+E.fyName(T0,S,naming)+' to date.';
+  heroRibbon(S,T0,naming);
+}
+function refreshPlanStart(){
+  var S=+$('fyStart').value, T=+$('targetFY').value, T0=E.fyOf(TODAY,S), ms=E.fyMonths(T,S);
+  $('planStart').innerHTML=ms.map(function(m,i){return '<option value="'+i+'">'+m.full+'</option>';}).join('');
+  $('planStart').value=(T===T0)?E.fyIndex(TODAY,S):0;
+}
+function heroRibbon(S,T,naming){
+  $('heroCap').textContent='Example donor cycle, '+E.fyName(T,S,naming);
+  var ms=E.fyMonths(T,S), dec=ms.findIndex(function(m){return m.m===12;}), cls=[];
+  for(var i=0;i<12;i++){ var c=''; if(i===dec) c='a'; else if(i>=dec-3&&i<dec) c='c'; else if(i===dec+1||i===dec+3||i===dec+6) c='s'; cls.push(c); }
+  var names={c:'Cultivate',a:'Ask',s:'Steward'};
+  $('heroRibbon').innerHTML=ms.map(function(m,i){ return '<div class="m" style="--i:'+i+'"><div class="bar '+cls[i]+'" title="'+(names[cls[i]]||'')+'">'+(cls[i]==='a'?'<span>Ask</span>':'')+'</div><div class="lbl">'+E.MON[m.m-1]+'</div></div>'; }).join('');
+}
+
+/* File handling */
+function handleBuffer(buf,name){
+  try{
+    var wb;
+    if(/\.(csv|txt)$/i.test(name)){ var text=new TextDecoder('utf-8').decode(buf); if(text.charCodeAt(0)===0xFEFF) text=text.slice(1); wb=XLSX.read(text,{type:'string',raw:true}); }
+    else wb=XLSX.read(buf,{type:'array',cellDates:true});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    var rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});
+    loadRows(rows,name);
+  }catch(e){ $('fileInfo').innerHTML='<div class="warn">This file could not be read. Save it as CSV or .xlsx and try again. ('+esc(e.message)+')</div>'; }
+}
+function loadRows(rows,name){
+  if(!rows.length){ $('fileInfo').innerHTML='<div class="warn">The first sheet of this file has no rows. Check that the header row is on line 1.</div>'; return; }
+  state.rows=rows; state.fileName=name; state.headers=Object.keys(rows[0]);
+  state.map=E.detectColumns(state.headers);
+  $('fileInfo').innerHTML='<strong>'+esc(name)+'</strong> loaded: '+rows.length.toLocaleString()+' rows, '+state.headers.length+' columns.';
+  renderMapping(); $('mapping').style.display='block'; parse();
+}
+var FIELDS=[['id','Donor ID',true],['date','Gift date',true],['amount','Gift amount',true],['name','Donor name',false],['capacity','Rated capacity',false],['solicitor','Assigned solicitor',false]];
+function renderMapping(){
+  $('mapGrid').innerHTML=FIELDS.map(function(f){ var opts='<option value="">'+(f[2]?'Choose a column':'Not in my file')+'</option>'+state.headers.map(function(h){return '<option'+(state.map[f[0]]===h?' selected':'')+'>'+esc(h)+'</option>';}).join('');
+    return '<label class="f">'+f[1]+(f[2]?'':' <small>Optional</small>')+'<select data-map="'+f[0]+'">'+opts+'</select></label>'; }).join('');
+  $('mapGrid').querySelectorAll('select').forEach(function(s){ s.addEventListener('change',function(){ state.map[s.dataset.map]=s.value||undefined; parse(); }); });
+}
+function parse(){
+  var m=state.map, missing=FIELDS.filter(function(f){return f[2]&&!m[f[0]];}).map(function(f){return f[1].toLowerCase();});
+  if(missing.length){ $('parseInfo').innerHTML='<div class="warn">Choose a column for '+missing.join(', ')+' to continue.</div>'; state.gifts=null; setBuild(); return; }
+  var res=E.toGifts(state.rows,m); state.gifts=res.gifts;
+  var ids={}, minD=null, maxD=null, sols={};
+  res.gifts.forEach(function(g){ ids[g.id]=1; if(!minD||g.date<minD) minD=g.date; if(!maxD||g.date>maxD) maxD=g.date; if(g.solicitor) sols[g.solicitor]=(sols[g.solicitor]||0)+1; });
+  var h='<p style="margin:10px 0 0">Read <strong>'+res.gifts.length.toLocaleString()+' gifts</strong> from <strong>'+Object.keys(ids).length.toLocaleString()+' donors</strong>'+(minD?', dated '+minD.toLocaleDateString('en-US')+' to '+maxD.toLocaleDateString('en-US'):'')+'.</p>';
+  if(res.skipped){ var why=[]; if(res.reasons.date) why.push(res.reasons.date+' with unreadable dates'); if(res.reasons.amount) why.push(res.reasons.amount+' with unreadable amounts'); if(res.reasons.id) why.push(res.reasons.id+' with no donor ID');
+    h+='<div class="warn">Skipped '+res.skipped.toLocaleString()+' rows: '+why.join(', ')+'.'+(res.reasons.date>state.rows.length/2?' Check that the gift date column is mapped correctly.':'')+'</div>'; }
+  if(!res.gifts.length) h+='<div class="warn">No gifts could be read. Check the column choices above.</div>';
+  $('parseInfo').innerHTML=h;
+  var sel=$('solicitor'), cur=sel.value, names=Object.keys(sols).sort();
+  sel.innerHTML='<option value="">Everyone in the file</option>'+names.map(function(n){return '<option>'+esc(n)+'</option>';}).join('');
+  if(names.indexOf(cur)>=0) sel.value=cur;
+  setBuild();
+}
+function setBuild(){ var ok=!!(state.gifts&&state.gifts.length); $('build').disabled=!ok; $('buildHint').textContent=ok?'Ready. Build the plan, review it here, then download the workbook.':'Load a file in step 2 to build your plan.'; }
+
+function cfgFromForm(){
+  var s=readForm();
+  var mw=[]; for(var m=1;m<=12;m++) mw.push(s.weights[m]!=null?s.weights[m]:1);
+  return {fyStart:s.fyStart,naming:s.fyNaming,targetFY:s.targetFY,planStart:s.planStart,planName:s.planName.trim(),solicitor:s.solicitor,
+    lookback:+s.lookback,basis:s.basis,up:{Growing:s.upGrowing/100,Steady:s.upSteady/100,Declining:s.upDeclining/100,New:s.upNew/100},
+    react:{Lapsed:s.reLapsed/100,'Long lapsed':s.reLong/100},minAsk:Math.max(0,+s.minAsk||0),rounding:s.rounding,useCapacity:s.useCap,capacityPct:Math.max(0.01,(+s.capPct||20)/100),
+    tiers:s.tiers,gap:+s.gap,monthWeights:mw,boostFYEnd:s.boostEnd,honorMonth:s.honorMonth,maxAsks:Math.max(0,+s.maxAsks||0),
+    prob:{Growing:s.pGrowing/100,Steady:s.pSteady/100,Declining:s.pDeclining/100,New:s.pNew/100,Lapsed:s.pLapsed/100,'Long lapsed':s.pLong/100},
+    goal:+s.goal||0,includeLong:s.includeLong,today:TODAY};
+}
+function build(){
+  save();
+  var cfg=cfgFromForm(), plan=E.buildPlan(state.gifts,cfg); state.plan=plan;
+  if(!plan.donors.length){ $('buildMsg').innerHTML='<div class="warn">No donors with giving in the five fiscal years before '+plan.fyLabel+' were found'+(cfg.solicitor?' for '+esc(cfg.solicitor):'')+'. Check the date range of your file and the fiscal year settings.</div>'; $('results').style.display='none'; return; }
+  $('buildMsg').innerHTML='';
+  var t=plan.totals, M=E.money;
+  $('resTitle').innerHTML=esc(cfg.planName?cfg.planName+', ':'Your plan for ')+'<em>'+esc(plan.fyLabel)+'</em>'+(cfg.solicitor?' '+esc('for '+cfg.solicitor):'');
+  var figs=[['Donors in plan',t.donors.toLocaleString(),''],['Asks scheduled',t.asks.toLocaleString(),''],['Total to ask',M(t.askSum),'gold'],['Weighted projection',M(t.weighted),''],['Received so far',M(t.fytd),''],['Projected year total',M(t.projected),'']];
+  if(cfg.goal>0){ var gap=cfg.goal-t.projected; figs.push([gap>0?'Short of goal':'Ahead of goal',M(Math.abs(gap)),'']); }
+  $('figs').innerHTML=figs.map(function(f){return '<div class="fig '+f[2]+'"><b>'+f[1]+'</b><span>'+f[0]+'</span></div>';}).join('');
+  var maxV=Math.max.apply(null,plan.monthly.map(function(m){return m.actual+m.weighted;}).concat([1]));
+  $('planRibbon').innerHTML=plan.monthly.map(function(m){
+    var ha=Math.max(0,m.actual)/maxV*100, hp=m.weighted/maxV*100;
+    return '<div class="col'+(m.status==='Complete'?' past':'')+'"><div class="stack" title="'+esc(m.full)+'"><div class="proj" style="height:'+hp+'%"></div><div class="act" style="height:'+ha+'%"></div></div>'+
+      '<div class="mname">'+esc(m.label)+'</div><div class="amt">'+(m.actual+m.weighted>0?M(m.actual+m.weighted):'&nbsp;')+'</div><div class="meta">'+m.asks+' ask'+(m.asks===1?'':'s')+'<br>'+m.cult+' cultivate<br>'+m.steward+' steward</div></div>'; }).join('');
+  var top=plan.donors.filter(function(d){return d.askIdx!=null;}).slice(0,10);
+  $('topTable').className='top'; $('topTable').innerHTML='<thead><tr><th>Donor</th><th>Pattern</th><th>Tier</th><th class="r">'+esc(plan.prevLabel)+' giving</th><th class="r">Ask</th><th>Month</th></tr></thead><tbody>'+
+    top.map(function(d){return '<tr><td>'+esc(d.name)+'</td><td>'+d.seg+'</td><td>'+esc(d.tier)+'</td><td class="r num">'+M(d.lastFY)+'</td><td class="r num"><strong>'+M(d.remaining)+'</strong></td><td>'+esc(d.askMonth)+'</td></tr>';}).join('')+'</tbody>';
+  $('notes').innerHTML=plan.warnings.map(function(w){return '<div class="warn">'+esc(w)+'</div>';}).join('');
+  $('results').style.display='block';
+  $('results').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+}
+function download(){
+  var p=state.plan; if(!p) return;
+  var btn=$('download'); btn.disabled=true; btn.textContent='Preparing workbook';
+  try{
+    var wb=E.buildWorkbook(p);
+    wb.xlsx.writeBuffer().then(function(buf){
+      var blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      var a=document.createElement('a'); var slug=(p.cfg.planName||p.cfg.solicitor||'Portfolio').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'');
+      var d=p.generated, ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      a.href=URL.createObjectURL(blob); a.download='Solicitation_Plan_'+p.fyLabel+'_'+slug+'_'+ds+'.xlsx'; document.body.appendChild(a); a.click();
+      setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1500);
+      btn.disabled=false; btn.textContent='Download Excel plan';
+    }).catch(function(e){ btn.disabled=false; btn.textContent='Download Excel plan'; alert('The workbook could not be created: '+e.message); });
+  }catch(e){ btn.disabled=false; btn.textContent='Download Excel plan'; alert('The workbook could not be created: '+e.message); }
+}
+function sampleCsv(){
+  var rows=E.sampleRows(+$('fyStart').value,TODAY), h=Object.keys(rows[0]);
+  var q=function(v){ v=String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  return [h.join(',')].concat(rows.map(function(r){return h.map(function(k){return q(r[k]);}).join(',');})).join('\r\n');
+}
+
+/* Wiring */
+applyForm(load());
+$('fyStart').addEventListener('change',function(){ refreshCalendar(); save(); });
+$('fyNaming').addEventListener('change',function(){ refreshCalendar(); save(); });
+$('targetFY').addEventListener('change',refreshPlanStart);
+$('step3').addEventListener('change',save);
+$('resetDefaults').addEventListener('click',function(){ try{localStorage.removeItem(STORE);}catch(e){} $('weights').innerHTML=''; applyForm(JSON.parse(JSON.stringify(DEF))); });
+$('file').addEventListener('change',function(e){ var f=e.target.files[0]; if(!f) return; f.arrayBuffer().then(function(b){handleBuffer(b,f.name);}); });
+var drop=$('drop');
+['dragenter','dragover'].forEach(function(ev){ drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('over');}); });
+['dragleave','drop'].forEach(function(ev){ drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('over');}); });
+drop.addEventListener('drop',function(e){ var f=e.dataTransfer.files[0]; if(f) f.arrayBuffer().then(function(b){handleBuffer(b,f.name);}); });
+$('useSample').addEventListener('click',function(){ loadRows(E.sampleRows(+$('fyStart').value,TODAY),'Sample portfolio'); });
+$('sampleDl').addEventListener('click',function(){ var blob=new Blob([sampleCsv()],{type:'text/csv'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='sample_gift_history.csv'; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000); });
+$('build').addEventListener('click',build);
+$('heroSample').addEventListener('click',function(){ $('useSample').click(); $('step2').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); });
+$('download').addEventListener('click',download);
+})();
+</script>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+  (function(){
+    var reveals = document.querySelectorAll('.reveal');
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+      }, {threshold:0.12});
+      reveals.forEach(function(el){ io.observe(el); });
+    } else { reveals.forEach(function(el){ el.classList.add('in'); }); }
+  })();
+</script>
+</body>
+</html>
